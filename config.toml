@@ -1,0 +1,8 @@
+[remote]
+privkey = "${HOME}/.ssh/id_rsa"
+
+[local]
+default_dir = "${HOME}/tv"
+
+[validation]
+allowed_exts = ["avi", "m4v", "ass", "3gp", "mkv", "mp4", "srt"]
