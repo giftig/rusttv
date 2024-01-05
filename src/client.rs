@@ -22,12 +22,12 @@ impl SshClient {
 
     pub fn read_shows(&mut self) -> Vec<String> {
         let mut channel = self.session.channel_session().unwrap();
-        channel.exec(&format!("ls {}", self.tv_dir)).unwrap();
+        channel.exec(&format!("ls -1 {}", self.tv_dir)).unwrap();
 
         let mut output = String::new();
         channel.read_to_string(&mut output).unwrap();
         channel.wait_close().unwrap();
 
-        output.split("\n").map(String::from).collect()
+        output.split_terminator("\n").map(String::from).collect()
     }
 }

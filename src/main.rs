@@ -1,5 +1,6 @@
 pub mod client;
 pub mod config;
+pub mod episode;
 
 use client::SshClient;
 
@@ -17,5 +18,9 @@ fn main() {
     let shows = client.read_shows();
 
     println!("{:?}", conf);
-    println!("{:?}", shows);
+
+    println!("================================================");
+    for s in shows {
+        println!("{}", s);
+    }
 }
