@@ -2,7 +2,7 @@
 mod tests;
 
 use std::fs::canonicalize;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use regex::Regex;
 use strsim;
@@ -12,7 +12,7 @@ const SIM_THRESHOLD_GOOD: f64 = 0.7;
 
 #[derive(Debug, PartialEq)]
 pub struct Episode {
-    pub local_path: String,
+    pub local_path: PathBuf,
     pub show_name: String,
     pub show_certainty: f64,
     pub season_num: u32,
@@ -86,8 +86,8 @@ impl Episode {
         None
     }
 
-    pub fn from(path: &str, known_shows: &Vec<String>, allowed_exts: &Vec<String>) -> Result<Episode, ParseError> {
-        let abs_path = canonicalize(Path::new(&path)).map_err(|_| ParseError::BadPath)?;
+    pub fn from(path: &Path, known_shows: &Vec<String>, allowed_exts: &Vec<String>) -> Result<Episode, ParseError> {
+        let abs_path = canonicalize(path).map_err(|_| ParseError::BadPath)?;
         let comps: Vec<&str> = abs_path.iter().map(|s| { s.to_str().unwrap() }).collect();
 
         if comps.len() <= 1 {
@@ -105,7 +105,7 @@ impl Episode {
         }
 
         Ok(Episode {
-            local_path: path.to_string(),
+            local_path: PathBuf::from(path),
             show_name: show_name,
             show_certainty: certainty,
             season_num: season_num,

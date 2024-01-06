@@ -3,7 +3,7 @@ use super::*;
 use std::fs;
 use std::fs::OpenOptions;
 use std::io;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use claim::*;
 
@@ -28,11 +28,11 @@ fn allowed_exts() -> Vec<String> {
 
 #[test]
 fn valid_episode_exact() {
-    let path = "/tmp/rusttv-tests/All My Circuits/S01 E02.mkv";
-    touch_file(Path::new(path)).unwrap();
+    let path = PathBuf::from("/tmp/rusttv-tests/All My Circuits/S01 E02.mkv");
+    touch_file(&path).unwrap();
 
     let expected = Episode {
-        local_path: String::from(path),
+        local_path: path.clone(),
         show_name: String::from("All My Circuits"),
         show_certainty: 1.0,
         season_num: 1,
@@ -40,22 +40,24 @@ fn valid_episode_exact() {
         ext: String::from("mkv")
     };
 
-    let actual = Episode::from(path, &tv_shows(), &allowed_exts()).unwrap();
+    let actual = Episode::from(&path, &tv_shows(), &allowed_exts()).unwrap();
 
     assert_eq!(actual, expected);
 }
 
 #[test]
 fn valid_episode_fuzzy() {
-    let prefix = "/tmp/rusttv-tests/All My Circuits/";
+    let prefix = PathBuf::from("/tmp/rusttv-tests/All My Circuits/");
 
-    for p in vec![
+    for f in vec![
         "all.my.circuits.s01e02.1080p.mkv",
         "Calculon Has Amnesia - 1x02.mkv",
         "All.My.Circuits.S01E02.Christmas.Special.1080p.HDTV.H264-FTP[Morbotron.com].mkv"
     ] {
-        let path = format!("{prefix}{p}");
-        touch_file(Path::new(&path)).unwrap();
+        let mut path = prefix.clone();
+        path.push(f);
+
+        touch_file(&path).unwrap();
 
         let expected = Episode {
             local_path: path.clone(),
@@ -74,7 +76,7 @@ fn valid_episode_fuzzy() {
 
 #[test]
 fn valid_show_fuzzy() {
-    let prefix = "/tmp/rusttv-tests/";
+    let prefix = PathBuf::from("/tmp/rusttv-tests/");
 
     for (fuzzy, exact) in vec![
         ("all my circuits", "All My Circuits"),
@@ -83,8 +85,10 @@ fn valid_show_fuzzy() {
         ("Calculon a Calculon Story", "Calculon: A Calculon Story"),
         ("calculon a calculon story (2011)", "Calculon: A Calculon Story")
     ] {
-        let path = format!("{prefix}{fuzzy}/S00 E00.mp4");
-        touch_file(Path::new(&path)).unwrap();
+        let mut path = prefix.clone();
+        path.push(fuzzy);
+        path.push("S00 E00.mp4");
+        touch_file(&path).unwrap();
 
         let actual = Episode::from(&path, &tv_shows(), &allowed_exts()).unwrap();
 
@@ -100,7 +104,7 @@ fn valid_show_fuzzy() {
 
 #[test]
 fn bad_path() {
-    let path = "/";
+    let path = Path::new("/");
 
     let expected = ParseError::BadPath;
     let actual = Episode::from(path, &tv_shows(), &allowed_exts()).unwrap_err();
@@ -110,8 +114,8 @@ fn bad_path() {
 
 #[test]
 fn bad_show_name() {
-    let path = "/tmp/rusttv-tests/Totally Unknown Show/S01 E01.mkv";
-    touch_file(Path::new(path)).unwrap();
+    let path = Path::new("/tmp/rusttv-tests/Totally Unknown Show/S01 E01.mkv");
+    touch_file(path).unwrap();
 
     let expected = ParseError::BadShow;
     let actual = Episode::from(path, &tv_shows(), &allowed_exts()).unwrap_err();
