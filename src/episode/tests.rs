@@ -24,7 +24,7 @@ fn allowed_exts() -> Vec<String> {
 }
 
 #[test]
-fn valid_episode() {
+fn valid_episode_exact() {
     let path = "/tmp/rusttv-tests/All My Circuits/S01 E02.mkv";
     touch_file(Path::new(path)).unwrap();
 
@@ -39,6 +39,32 @@ fn valid_episode() {
     let actual = Episode::from(path, &tv_shows(), &allowed_exts()).unwrap();
 
     assert_eq!(actual, expected);
+}
+
+#[test]
+fn valid_episode_fuzzy() {
+    let prefix = "/tmp/rusttv-tests/All My Circuits/";
+
+    for p in vec![
+        "all.my.circuits.s01e02.1080p.mkv",
+        "Calculon Has Amnesia - 1x02.mkv",
+        "All.My.Circuits.S01E02.Christmas.Special.1080p.HDTV.H264-FTP[Morbotron.com].mkv"
+    ] {
+        let path = format!("{prefix}{p}");
+        touch_file(Path::new(&path)).unwrap();
+
+        let expected = Episode {
+            local_path: path.clone(),
+            show_name: String::from("All My Circuits"),
+            season_num: 1,
+            episode_num: 2,
+            ext: String::from("mkv")
+        };
+
+        let actual = Episode::from(&path, &tv_shows(), &allowed_exts()).unwrap();
+
+        assert_eq!(actual, expected);
+    }
 }
 
 #[test]

@@ -24,7 +24,7 @@ pub enum ParseError {
 }
 
 impl Episode {
-    pub fn derive_show(show: &str, known_shows: &Vec<String>) -> Option<String> {
+    fn derive_show(show: &str, known_shows: &Vec<String>) -> Option<String> {
         let s = show.to_string();
 
         if known_shows.contains(&s) {
@@ -37,16 +37,29 @@ impl Episode {
     }
 
     // Parse filename into season, episode, and extension; e.g. S01 E01.mkv -> (1, 1, mkv)
-    pub fn parse_filename(filename: &str) -> Option<(u32, u32, String)> {
-        // TODO: Use the smart-rename regexes to match the various supported patterns
-        let pattern = Regex::new(r"^S([0-9]{2}) E([0-9]{2})\.([^\.]+)$").unwrap();
+    fn parse_filename(filename: &str) -> Option<(u32, u32, String)> {
+        let parse = |pattern: Regex| {
+            let caps = pattern.captures(filename)?;
+            let season = caps.get(1)?.as_str().parse::<u32>().unwrap();
+            let episode = caps.get(2)?.as_str().parse::<u32>().unwrap();
+            let ext = caps.get(3)?.as_str().to_string();
 
-        let caps = pattern.captures(filename)?;
-        let season = caps.get(1)?.as_str().parse::<u32>().unwrap();
-        let episode = caps.get(2)?.as_str().parse::<u32>().unwrap();
-        let ext = caps.get(3)?.as_str().to_string();
+            Some((season, episode, ext))
+        };
 
-        Some((season, episode, ext))
+        // Patterns taken from smart-rename, minus the anime one
+        for pattern in vec![
+            Regex::new(r"^.*[Ss]([0-9]{2})[\s\-\.]*[Ee]([0-9]{2}).*\.([a-z0-9]+)$").unwrap(),
+            Regex::new(r"^.*[^0-9]([0-9]{1,2})[x\.]([0-9]{1,2}).*\.([a-z0-9]+)$").unwrap(),
+            Regex::new(r"^.*[\s\-\.]([1-9])([0-9]{2}).*\.([a-z0-9]+)$").unwrap()
+        ] {
+            let result = parse(pattern);
+            if result.is_some() {
+                return result;
+            }
+        }
+
+        None
     }
 
     pub fn from(path: &str, known_shows: &Vec<String>, allowed_exts: &Vec<String>) -> Result<Episode, ParseError> {
