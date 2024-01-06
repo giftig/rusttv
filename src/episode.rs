@@ -5,11 +5,16 @@ use std::fs::canonicalize;
 use std::path::Path;
 
 use regex::Regex;
+use strsim;
+
+const SIM_THRESHOLD_PERFECT: f64 = 0.9;
+const SIM_THRESHOLD_GOOD: f64 = 0.7;
 
 #[derive(Debug, PartialEq)]
 pub struct Episode {
     pub local_path: String,
     pub show_name: String,
+    pub show_certainty: f64,
     pub season_num: u32,
     pub episode_num: u32,
     pub ext: String
@@ -24,15 +29,34 @@ pub enum ParseError {
 }
 
 impl Episode {
-    fn derive_show(show: &str, known_shows: &Vec<String>) -> Option<String> {
+    fn derive_show(show: &str, known_shows: &Vec<String>) -> Option<(String, f64)> {
         let s = show.to_string();
 
         if known_shows.contains(&s) {
-            return Some(s);
+            return Some((s, 1.0));
         }
 
-        // TODO: Use strsum to find the closest match and compare to some static certainty
-        // threshold and return that if appropriate
+        let mut best_thresh: f64 = 0.0;
+        let mut best_match: Option<&str> = None;
+
+        for known in known_shows {
+            let thresh = strsim::jaro(&show, &known);
+
+            if thresh >= SIM_THRESHOLD_PERFECT {
+                return Some((known.clone(), thresh));
+            }
+
+            if thresh > best_thresh {
+                best_thresh = thresh;
+                best_match = Some(&known);
+            }
+        }
+
+        println!("Best thresh for {}: {} ({})", show, best_thresh, best_match.unwrap());
+        if best_thresh >= SIM_THRESHOLD_GOOD {
+            return best_match.map(|s| (s.to_string(), best_thresh));
+        }
+
         None
     }
 
@@ -73,7 +97,7 @@ impl Episode {
         let raw_show = comps[comps.len() - 2];
         let filename = comps[comps.len() - 1];
 
-        let show_name = Self::derive_show(raw_show, known_shows).ok_or(ParseError::BadShow)?;
+        let (show_name, certainty) = Self::derive_show(raw_show, known_shows).ok_or(ParseError::BadShow)?;
         let (season_num, episode_num, ext) = Self::parse_filename(&filename).ok_or(ParseError::BadFilename)?;
 
         if !allowed_exts.contains(&ext) {
@@ -83,6 +107,7 @@ impl Episode {
         Ok(Episode {
             local_path: path.to_string(),
             show_name: show_name,
+            show_certainty: certainty,
             season_num: season_num,
             episode_num: episode_num,
             ext: ext
