@@ -1,3 +1,6 @@
+#[cfg(test)]
+pub mod tests;
+
 pub mod client;
 pub mod config;
 pub mod episode;

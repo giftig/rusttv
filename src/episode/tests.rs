@@ -1,17 +1,10 @@
 use super::*;
 
-use std::fs;
-use std::fs::OpenOptions;
-use std::io;
 use std::path::{Path, PathBuf};
 
 use claim::*;
 
-// Touch the given test file, creating a dir path to it as we go
-fn touch_file(path: &Path) -> io::Result<()> {
-    fs::create_dir_all(path.parent().unwrap()).ok();
-    OpenOptions::new().create(true).write(true).open(path).map(|_| { () })
-}
+use crate::tests as utils;
 
 fn tv_shows() -> Vec<String> {
     vec![
@@ -28,8 +21,7 @@ fn allowed_exts() -> Vec<String> {
 
 #[test]
 fn valid_episode_exact() {
-    let path = PathBuf::from("/tmp/rusttv-tests/All My Circuits/S01 E02.mkv");
-    touch_file(&path).unwrap();
+    let path = utils::create_path("All My Circuits/S01 E02.mkv");
 
     let expected = Episode {
         local_path: path.clone(),
@@ -47,7 +39,7 @@ fn valid_episode_exact() {
 
 #[test]
 fn valid_episode_fuzzy() {
-    let prefix = PathBuf::from("/tmp/rusttv-tests/All My Circuits/");
+    let prefix = utils::test_path("All My Circuits/");
 
     for f in vec![
         "all.my.circuits.s01e02.1080p.mkv",
@@ -57,7 +49,7 @@ fn valid_episode_fuzzy() {
         let mut path = prefix.clone();
         path.push(f);
 
-        touch_file(&path).unwrap();
+        utils::touch_file(&path).unwrap();
 
         let expected = Episode {
             local_path: path.clone(),
@@ -76,7 +68,7 @@ fn valid_episode_fuzzy() {
 
 #[test]
 fn valid_show_fuzzy() {
-    let prefix = PathBuf::from("/tmp/rusttv-tests/");
+    let prefix = PathBuf::from(utils::PATH_PREFIX);
 
     for (fuzzy, exact) in vec![
         ("all my circuits", "All My Circuits"),
@@ -88,7 +80,7 @@ fn valid_show_fuzzy() {
         let mut path = prefix.clone();
         path.push(fuzzy);
         path.push("S00 E00.mp4");
-        touch_file(&path).unwrap();
+        utils::touch_file(&path).unwrap();
 
         let actual = Episode::from(&path, &tv_shows(), &allowed_exts()).unwrap();
 
@@ -114,11 +106,10 @@ fn bad_path() {
 
 #[test]
 fn bad_show_name() {
-    let path = Path::new("/tmp/rusttv-tests/Totally Unknown Show/S01 E01.mkv");
-    touch_file(path).unwrap();
+    let path = utils::create_path("Totally Unknown Show/S01 E01.mkv");
 
     let expected = ParseError::BadShow;
-    let actual = Episode::from(path, &tv_shows(), &allowed_exts()).unwrap_err();
+    let actual = Episode::from(&path, &tv_shows(), &allowed_exts()).unwrap_err();
 
     assert_eq!(actual, expected);
 }
