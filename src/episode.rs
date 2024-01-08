@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod tests;
 
+use std::fmt;
 use std::fs::canonicalize;
 use std::path::{Path, PathBuf};
 
@@ -28,6 +29,38 @@ pub enum ParseError {
     BadExtension
 }
 
+impl fmt::Display for ParseError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let desc = match self {
+            ParseError::BadShow => "could not match TV show to existing entry",
+            ParseError::BadFilename => "could not calculate season / episode number from filename",
+            ParseError::BadPath => "could not find TV show name",
+            ParseError::BadExtension => "file extension is not permitted"
+        };
+
+        write!(f, "{}", desc)
+    }
+}
+
+impl fmt::Display for Episode {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // TODO: dedent?
+        // FIXME: Colour
+        let desc = format!(
+            r#"
+Local file: {}
+Represents: {}
+Confidence: {:.0}%
+            "#,
+            self.local_path.display(),
+            self.remote_subpath(),
+            self.show_certainty * 100.0
+        );
+
+        write!(f, "{}", desc)
+    }
+}
+
 impl Episode {
     fn derive_show(show: &str, known_shows: &Vec<String>) -> Option<(String, f64)> {
         let s = show.to_string();
@@ -52,7 +85,6 @@ impl Episode {
             }
         }
 
-        println!("Best thresh for {}: {} ({})", show, best_thresh, best_match.unwrap());
         if best_thresh >= SIM_THRESHOLD_GOOD {
             return best_match.map(|s| (s.to_string(), best_thresh));
         }

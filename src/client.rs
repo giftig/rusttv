@@ -8,6 +8,7 @@ pub struct SshClient {
     tv_dir: String,
 }
 
+// FIXME: Clean up all the unwraps
 impl SshClient {
     pub fn connect(host: &str, port: usize, username: &str, privkey: &str, tv_dir: &str) -> SshClient {
         let mut client = SshClient { session: Session::new().unwrap(), tv_dir: tv_dir.to_string() };

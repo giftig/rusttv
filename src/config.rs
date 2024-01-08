@@ -8,10 +8,13 @@ use regex::{Captures, Regex};
 use serde::Deserialize;
 use toml;
 
+use crate::local::FailureAction;
+
 #[derive(Deserialize, Debug)]
 pub(super) struct Config {
     pub local: Local,
-    pub remote: Remote
+    pub remote: Remote,
+    pub validation: Validation,
 }
 
 #[derive(Deserialize, Debug)]
@@ -37,6 +40,9 @@ pub(super) struct Remote {
 pub(super) struct Validation {
     #[serde(default = "default_allowed_exts")]
     pub allowed_exts: Vec<String>,
+
+    #[serde(default = "default_on_failure")]
+    pub on_failure: FailureAction,
 }
 
 // Validation defaults
@@ -50,6 +56,9 @@ fn default_port() -> usize { 22 }
 fn default_username() -> String { "osmc".to_string() }
 fn default_privkey() -> String { "${HOME}/.ssh/id_rsa".to_string() }
 fn default_tv_dir() -> String { "/usr/store/tv/".to_string() }
+
+// Local defaults
+fn default_on_failure() -> FailureAction { FailureAction::Skip }
 
 
 fn sub_vars(line: &str) -> String {
