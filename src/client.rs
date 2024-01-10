@@ -21,14 +21,23 @@ impl SshClient {
         client
     }
 
-    pub fn read_shows(&mut self) -> Vec<String> {
+    fn execute(&mut self, cmd: &str) -> String {
         let mut channel = self.session.channel_session().unwrap();
-        channel.exec(&format!("ls -1 {}", self.tv_dir)).unwrap();
+        channel.exec(cmd).unwrap();
 
         let mut output = String::new();
         channel.read_to_string(&mut output).unwrap();
         channel.wait_close().unwrap();
+        output
+    }
 
+    pub fn list_shows(&mut self) -> Vec<String> {
+        let output = self.execute(&format!("ls -1 '{}'", self.tv_dir));
+        output.split_terminator("\n").map(String::from).collect()
+    }
+
+    pub fn list_episodes(&mut self, show: &str) -> Vec<String> {
+        let output = self.execute(&format!("ls -1 '{}/{}'", self.tv_dir, show));
         output.split_terminator("\n").map(String::from).collect()
     }
 }

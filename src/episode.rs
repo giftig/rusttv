@@ -11,7 +11,7 @@ use strsim;
 const SIM_THRESHOLD_PERFECT: f64 = 0.9;
 const SIM_THRESHOLD_GOOD: f64 = 0.7;
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Episode {
     pub local_path: PathBuf,
     pub show_name: String,
@@ -146,7 +146,10 @@ impl Episode {
         })
     }
 
+    pub fn remote_filename(&self) -> String {
+        format!("S{:02} E{:02}.{}", self.season_num, self.episode_num, self.ext)
+    }
     pub fn remote_subpath(&self) -> String {
-        format!("{}/S{:02} E{:02}.{}", self.show_name, self.season_num, self.episode_num, self.ext)
+        format!("{}/{}", self.show_name, self.remote_filename())
     }
 }
