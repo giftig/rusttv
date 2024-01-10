@@ -1,3 +1,6 @@
+#[cfg(test)]
+mod tests;
+
 use std::path::{Path, PathBuf};
 use std::fs;
 
@@ -5,7 +8,7 @@ use serde::Deserialize;
 
 use crate::episode::Episode;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum ReadError {
     Aborted,
     Fatal,
