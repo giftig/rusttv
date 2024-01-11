@@ -53,7 +53,7 @@ Represents: {}
 Confidence: {:.0}%
             "#,
             self.local_path.display(),
-            self.remote_subpath(),
+            self.remote_subpath().display(),
             self.show_certainty * 100.0
         );
 
@@ -149,7 +149,9 @@ impl Episode {
     pub fn remote_filename(&self) -> String {
         format!("S{:02} E{:02}.{}", self.season_num, self.episode_num, self.ext)
     }
-    pub fn remote_subpath(&self) -> String {
-        format!("{}/{}", self.show_name, self.remote_filename())
+    pub fn remote_subpath(&self) -> PathBuf {
+        let mut p = PathBuf::from(&self.show_name);
+        p.push(self.remote_filename());
+        p
     }
 }

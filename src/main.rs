@@ -77,10 +77,15 @@ fn perform_sync(conf: Config) {
 
     let sync_eps: Vec<Episode> = diff_eps(local_eps, remote_eps);
 
+    // TODO: Sort this list alphabetically, it's very arbitrary right now
     for e in sync_eps {
+        println!("Syncing the following episode:");
         println!("{}", e);
-    }
 
+        let mut remote_path = PathBuf::from(&conf.remote.tv_dir);
+        remote_path.push(&e.remote_subpath());
+        client.upload_file(&e.local_path, &remote_path);
+    }
 }
 
 fn main() {
