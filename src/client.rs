@@ -19,18 +19,29 @@ pub enum ClientError {
     #[error("An SSH error occurred: {0}")]
     Ssh(#[from] SshError),
     #[error("An IO error occurred: {0}")]
-    Io(#[from] IoError)
+    Io(#[from] IoError),
 }
 
 type Result<T> = std::result::Result<T, ClientError>;
 
 impl SshClient {
-    pub fn connect(host: &str, port: usize, username: &str, privkey: &str, tv_dir: &str) -> Result<SshClient> {
-        let mut client = SshClient { session: Session::new()?, tv_dir: tv_dir.to_string() };
+    pub fn connect(
+        host: &str,
+        port: usize,
+        username: &str,
+        privkey: &str,
+        tv_dir: &str,
+    ) -> Result<SshClient> {
+        let mut client = SshClient {
+            session: Session::new()?,
+            tv_dir: tv_dir.to_string(),
+        };
         let conn = TcpStream::connect(format!("{host}:{port}"))?;
         client.session.set_tcp_stream(conn);
         client.session.handshake()?;
-        client.session.userauth_pubkey_file(username, None, Path::new(privkey), None)?;
+        client
+            .session
+            .userauth_pubkey_file(username, None, Path::new(privkey), None)?;
 
         Ok(client)
     }

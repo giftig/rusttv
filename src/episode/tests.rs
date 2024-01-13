@@ -11,8 +11,11 @@ fn tv_shows() -> Vec<String> {
         "All My Circuits",
         "Everybody Loves Hypnotoad",
         "Calculon (2010)",
-        "Calculon: A Calculon Story"
-    ].into_iter().map(String::from).collect()
+        "Calculon: A Calculon Story",
+    ]
+    .into_iter()
+    .map(String::from)
+    .collect()
 }
 
 fn allowed_exts() -> Vec<String> {
@@ -29,7 +32,7 @@ fn valid_episode_exact() {
         show_certainty: 1.0,
         season_num: 1,
         episode_num: 2,
-        ext: String::from("mkv")
+        ext: String::from("mkv"),
     };
 
     let actual = Episode::from(&path, &tv_shows(), &allowed_exts()).unwrap();
@@ -44,7 +47,7 @@ fn valid_episode_fuzzy() {
     for f in vec![
         "all.my.circuits.s01e02.1080p.mkv",
         "Calculon Has Amnesia - 1x02.mkv",
-        "All.My.Circuits.S01E02.Christmas.Special.1080p.HDTV.H264-FTP[Morbotron.com].mkv"
+        "All.My.Circuits.S01E02.Christmas.Special.1080p.HDTV.H264-FTP[Morbotron.com].mkv",
     ] {
         let mut path = prefix.clone();
         path.push(f);
@@ -57,7 +60,7 @@ fn valid_episode_fuzzy() {
             show_certainty: 1.0,
             season_num: 1,
             episode_num: 2,
-            ext: String::from("mkv")
+            ext: String::from("mkv"),
         };
 
         let actual = Episode::from(&path, &tv_shows(), &allowed_exts()).unwrap();
@@ -75,7 +78,10 @@ fn valid_show_fuzzy() {
         ("All My Circuits (2011)", "All My Circuits"),
         ("calculon", "Calculon (2010)"),
         ("Calculon a Calculon Story", "Calculon: A Calculon Story"),
-        ("calculon a calculon story (2011)", "Calculon: A Calculon Story")
+        (
+            "calculon a calculon story (2011)",
+            "Calculon: A Calculon Story",
+        ),
     ] {
         let mut path = prefix.clone();
         path.push(fuzzy);

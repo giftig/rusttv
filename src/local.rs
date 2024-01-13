@@ -1,8 +1,8 @@
 #[cfg(test)]
 mod tests;
 
-use std::path::{Path, PathBuf};
 use std::fs;
+use std::path::{Path, PathBuf};
 
 use serde::Deserialize;
 use thiserror::Error;
@@ -11,7 +11,9 @@ use crate::episode::Episode;
 
 #[derive(Error, Debug, PartialEq)]
 pub enum ReadError {
-    #[error("Aborted due to errors! To skip individual episodes with errors, set on_failure = \"skip\"")]
+    #[error(
+        "Aborted due to errors! To skip individual episodes with errors, set on_failure = \"skip\""
+    )]
     Aborted,
     #[error("Couldn't read TV shows. Check that the TV show path and any permissions are ok, and that the path contains one folder per TV show.")]
     Fatal,
@@ -32,7 +34,7 @@ enum ReadShowError {
 #[serde(rename_all = "snake_case")]
 pub enum FailureAction {
     Abort,
-    Skip
+    Skip,
 }
 
 pub struct LocalReader {
@@ -45,12 +47,12 @@ impl LocalReader {
     pub fn new(
         known_shows: Vec<String>,
         allowed_exts: Vec<String>,
-        on_failure: FailureAction
+        on_failure: FailureAction,
     ) -> LocalReader {
         LocalReader {
             known_shows: known_shows,
             allowed_exts: allowed_exts,
-            on_failure: on_failure
+            on_failure: on_failure,
         }
     }
 
@@ -111,7 +113,7 @@ impl LocalReader {
 
                     self.read_show(&p)
                 }
-                Err(_) => Err(ReadShowError::BadPath(dir.to_path_buf()))
+                Err(_) => Err(ReadShowError::BadPath(dir.to_path_buf())),
             };
 
             match episodes {

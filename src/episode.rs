@@ -18,7 +18,7 @@ pub struct Episode {
     pub show_certainty: f64,
     pub season_num: u32,
     pub episode_num: u32,
-    pub ext: String
+    pub ext: String,
 }
 
 #[derive(Debug, PartialEq)]
@@ -26,7 +26,7 @@ pub enum ParseError {
     BadShow,
     BadFilename,
     BadPath,
-    BadExtension
+    BadExtension,
 }
 
 impl fmt::Display for ParseError {
@@ -35,7 +35,7 @@ impl fmt::Display for ParseError {
             ParseError::BadShow => "could not match TV show to existing entry",
             ParseError::BadFilename => "could not calculate season / episode number from filename",
             ParseError::BadPath => "could not find TV show name",
-            ParseError::BadExtension => "file extension is not permitted"
+            ParseError::BadExtension => "file extension is not permitted",
         };
 
         write!(f, "{}", desc)
@@ -107,7 +107,7 @@ impl Episode {
         for pattern in vec![
             Regex::new(r"^.*[Ss]([0-9]{2})[\s\-\.]*[Ee]([0-9]{2}).*\.([a-z0-9]+)$").unwrap(),
             Regex::new(r"^.*[^0-9]([0-9]{1,2})[x\.]([0-9]{1,2}).*\.([a-z0-9]+)$").unwrap(),
-            Regex::new(r"^.*[\s\-\.]([1-9])([0-9]{2}).*\.([a-z0-9]+)$").unwrap()
+            Regex::new(r"^.*[\s\-\.]([1-9])([0-9]{2}).*\.([a-z0-9]+)$").unwrap(),
         ] {
             let result = parse(pattern);
             if result.is_some() {
@@ -118,9 +118,13 @@ impl Episode {
         None
     }
 
-    pub fn from(path: &Path, known_shows: &Vec<String>, allowed_exts: &Vec<String>) -> Result<Episode, ParseError> {
+    pub fn from(
+        path: &Path,
+        known_shows: &Vec<String>,
+        allowed_exts: &Vec<String>,
+    ) -> Result<Episode, ParseError> {
         let abs_path = canonicalize(path).map_err(|_| ParseError::BadPath)?;
-        let comps: Vec<&str> = abs_path.iter().map(|s| { s.to_str().unwrap() }).collect();
+        let comps: Vec<&str> = abs_path.iter().map(|s| s.to_str().unwrap()).collect();
 
         if comps.len() <= 1 {
             return Err(ParseError::BadPath);
@@ -129,8 +133,10 @@ impl Episode {
         let raw_show = comps[comps.len() - 2];
         let filename = comps[comps.len() - 1];
 
-        let (show_name, certainty) = Self::derive_show(raw_show, known_shows).ok_or(ParseError::BadShow)?;
-        let (season_num, episode_num, ext) = Self::parse_filename(&filename).ok_or(ParseError::BadFilename)?;
+        let (show_name, certainty) =
+            Self::derive_show(raw_show, known_shows).ok_or(ParseError::BadShow)?;
+        let (season_num, episode_num, ext) =
+            Self::parse_filename(&filename).ok_or(ParseError::BadFilename)?;
 
         if !allowed_exts.contains(&ext) {
             return Err(ParseError::BadExtension);
@@ -142,12 +148,15 @@ impl Episode {
             show_certainty: certainty,
             season_num: season_num,
             episode_num: episode_num,
-            ext: ext
+            ext: ext,
         })
     }
 
     pub fn remote_filename(&self) -> String {
-        format!("S{:02} E{:02}.{}", self.season_num, self.episode_num, self.ext)
+        format!(
+            "S{:02} E{:02}.{}",
+            self.season_num, self.episode_num, self.ext
+        )
     }
     pub fn remote_subpath(&self) -> PathBuf {
         let mut p = PathBuf::from(&self.show_name);

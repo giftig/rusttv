@@ -8,8 +8,11 @@ fn tv_shows() -> Vec<String> {
     vec![
         "The Wild Adventures of the Abyssal Horror",
         "Abyssal Horror-chan Gets a Girlfriend",
-        "Snakes are our Friends (2010)"
-    ].into_iter().map(String::from).collect()
+        "Snakes are our Friends (2010)",
+    ]
+    .into_iter()
+    .map(String::from)
+    .collect()
 }
 
 fn allowed_exts() -> Vec<String> {
@@ -27,7 +30,7 @@ fn reader_abort() -> LocalReader {
 fn setup_all_valid(prefix: &str) -> () {
     let paths = vec![
         "The Wild Adventures of abyssal horror/wild.adventures.abyssal.horror.1x01.1080p.mkv",
-        "Snakes are our Friends (2010)/S07 E69.mkv"
+        "Snakes are our Friends (2010)/S07 E69.mkv",
     ];
 
     for p in paths {
@@ -40,7 +43,7 @@ fn setup_some_invalid(prefix: &str) -> () {
     let paths = vec![
         "sync.sh",
         "The Wild Adventures of abyssal horror/spam file.txt",
-        "Totally non-existent show/S01 E01.mkv"
+        "Totally non-existent show/S01 E01.mkv",
     ];
 
     for p in paths {

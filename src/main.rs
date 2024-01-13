@@ -6,9 +6,9 @@ pub mod config;
 pub mod episode;
 pub mod local;
 
+use std::collections::HashMap;
 use std::error;
 use std::path::PathBuf;
-use std::collections::HashMap;
 
 use client::SshClient;
 use config::Config;
@@ -17,7 +17,10 @@ use local::LocalReader;
 
 type Result<T> = std::result::Result<T, Box<dyn error::Error>>;
 
-fn get_remote_eps(client: &mut SshClient, local_eps: &Vec<Episode>) -> Result<HashMap<String, Vec<String>>> {
+fn get_remote_eps(
+    client: &mut SshClient,
+    local_eps: &Vec<Episode>,
+) -> Result<HashMap<String, Vec<String>>> {
     let mut by_show: HashMap<String, Vec<String>> = HashMap::new();
 
     for e in local_eps {
@@ -32,12 +35,15 @@ fn get_remote_eps(client: &mut SshClient, local_eps: &Vec<Episode>) -> Result<Ha
 
 // Filter the parsed local episodes down to only those which aren't already present in the remote
 fn diff_eps(local: Vec<Episode>, remote: HashMap<String, Vec<String>>) -> Vec<Episode> {
-    local.into_iter().filter(|ep| {
-        remote
-            .get(&ep.show_name)
-            .map(|eps| !eps.contains(&ep.remote_filename()))
-            .unwrap_or(false)
-    }).collect()
+    local
+        .into_iter()
+        .filter(|ep| {
+            remote
+                .get(&ep.show_name)
+                .map(|eps| !eps.contains(&ep.remote_filename()))
+                .unwrap_or(false)
+        })
+        .collect()
 }
 
 fn perform_sync(conf: Config) -> Result<()> {
@@ -47,7 +53,7 @@ fn perform_sync(conf: Config) -> Result<()> {
         remote.port,
         &remote.username,
         &remote.privkey,
-        &remote.tv_dir
+        &remote.tv_dir,
     )?;
     let known_shows = client.list_shows()?;
 
@@ -56,7 +62,7 @@ fn perform_sync(conf: Config) -> Result<()> {
     let reader = LocalReader::new(
         known_shows,
         conf.validation.allowed_exts.clone(),
-        conf.validation.on_failure
+        conf.validation.on_failure,
     );
     let local_eps = reader.read_local(&PathBuf::from(&conf.local.default_dir))?;
 
@@ -82,8 +88,10 @@ fn main() {
     // FIXME: OBTAIN A PROCESS LOCK.
     // What do I do if we panic and fail to clean it up?
     // Maybe just avoid panicking, and add instructions to delete it if panic happens anyway
-    perform_sync(conf).map_err(|e| {
-        println!("{}", e);
-        std::process::exit(1);
-    }).unwrap();
+    perform_sync(conf)
+        .map_err(|e| {
+            println!("{}", e);
+            std::process::exit(1);
+        })
+        .unwrap();
 }
