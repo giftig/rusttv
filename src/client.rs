@@ -4,6 +4,7 @@ use std::net::TcpStream;
 use std::path::Path;
 
 use ssh2::{Error as SshError, Session};
+use thiserror::Error;
 
 // Buffer size for file transfers
 const BUF_SIZE: usize = 1024 * 4;
@@ -13,22 +14,12 @@ pub struct SshClient {
     tv_dir: String,
 }
 
-#[derive(Debug)]
+#[derive(Error, Debug)]
 pub enum ClientError {
-    Ssh(SshError),
-    Io(IoError)
-}
-
-impl From<SshError> for ClientError {
-    fn from(err: SshError) -> ClientError {
-        ClientError::Ssh(err)
-    }
-}
-
-impl From<IoError> for ClientError {
-    fn from(err: IoError) -> ClientError {
-        ClientError::Io(err)
-    }
+    #[error("An SSH error occurred: {0}")]
+    Ssh(#[from] SshError),
+    #[error("An IO error occurred: {0}")]
+    Io(#[from] IoError)
 }
 
 type Result<T> = std::result::Result<T, ClientError>;

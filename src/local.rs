@@ -5,19 +5,25 @@ use std::path::{Path, PathBuf};
 use std::fs;
 
 use serde::Deserialize;
+use thiserror::Error;
 
 use crate::episode::Episode;
 
-#[derive(Debug, PartialEq)]
+#[derive(Error, Debug, PartialEq)]
 pub enum ReadError {
+    #[error("Aborted due to errors! To skip individual episodes with errors, set on_failure = \"skip\"")]
     Aborted,
+    #[error("Couldn't read TV shows. Check that the TV show path and any permissions are ok, and that the path contains one folder per TV show.")]
     Fatal,
 }
 
-#[derive(Debug)]
+#[derive(Error, Debug)]
 enum ReadShowError {
+    #[error("aborted due to bad show")]
     Aborted,
+    #[error("could not read path")]
     BadPath(PathBuf),
+    #[error("skipped bad show")]
     Skipped,
 }
 
