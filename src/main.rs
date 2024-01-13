@@ -9,22 +9,22 @@ pub mod local;
 use std::path::PathBuf;
 use std::collections::HashMap;
 
-use client::SshClient;
+use client::{ClientError, SshClient};
 use config::Config;
 use episode::Episode;
 use local::{LocalReader, ReadError};
 
-fn get_remote_eps(client: &mut SshClient, local_eps: &Vec<Episode>) -> HashMap<String, Vec<String>> {
+fn get_remote_eps(client: &mut SshClient, local_eps: &Vec<Episode>) -> Result<HashMap<String, Vec<String>>, ClientError> {
     let mut by_show: HashMap<String, Vec<String>> = HashMap::new();
 
     for e in local_eps {
         if by_show.contains_key(&e.show_name) {
             continue;
         }
-        by_show.insert(e.show_name.clone(), client.list_episodes(&e.show_name));
+        by_show.insert(e.show_name.clone(), client.list_episodes(&e.show_name)?);
     }
 
-    by_show
+    Ok(by_show)
 }
 
 // Filter the parsed local episodes down to only those which aren't already present in the remote
@@ -45,8 +45,8 @@ fn perform_sync(conf: Config) {
         &remote.username,
         &remote.privkey,
         &remote.tv_dir
-    );
-    let known_shows = client.list_shows();
+    ).unwrap();
+    let known_shows = client.list_shows().unwrap();
 
     println!("Found {} TV shows on remote host", known_shows.len());
 
@@ -73,7 +73,7 @@ fn perform_sync(conf: Config) {
         }
     };
 
-    let remote_eps = get_remote_eps(&mut client, &local_eps);
+    let remote_eps = get_remote_eps(&mut client, &local_eps).unwrap();
 
     let sync_eps: Vec<Episode> = diff_eps(local_eps, remote_eps);
 
@@ -84,7 +84,7 @@ fn perform_sync(conf: Config) {
 
         let mut remote_path = PathBuf::from(&conf.remote.tv_dir);
         remote_path.push(&e.remote_subpath());
-        client.upload_file(&e.local_path, &remote_path);
+        client.upload_file(&e.local_path, &remote_path).unwrap();
     }
 }
 
