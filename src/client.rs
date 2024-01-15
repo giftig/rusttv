@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io::{Error as IoError, Read, Write};
 use std::net::TcpStream;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use ssh2::{Error as SshError, Session};
 use thiserror::Error;
@@ -11,7 +11,7 @@ const BUF_SIZE: usize = 1024 * 4;
 
 pub struct SshClient {
     session: Session,
-    tv_dir: String,
+    tv_dir: PathBuf,
 }
 
 #[derive(Error, Debug)]
@@ -20,21 +20,30 @@ pub enum ClientError {
     Ssh(#[from] SshError),
     #[error("An IO error occurred: {0}")]
     Io(#[from] IoError),
+    #[error("A fatal error occurred while transforming OS-specific strings")]
+    PlatformError
 }
 
 type Result<T> = std::result::Result<T, ClientError>;
 
 impl SshClient {
+    // Simple sanitisation to make sure the path works ok in a single-quoted shell string
+    // This undoubtedly misses some edge cases but will work ok given injection isn't a problem
+    fn sanitise_shell_path(p: &Path) -> Result<String> {
+        let s = p.to_str().ok_or(ClientError::PlatformError)?;
+        Ok(s.replace(r"'", r"\'"))
+    }
+
     pub fn connect(
         host: &str,
         port: usize,
         username: &str,
         privkey: &str,
-        tv_dir: &str,
+        tv_dir: &Path,
     ) -> Result<SshClient> {
         let mut client = SshClient {
             session: Session::new()?,
-            tv_dir: tv_dir.to_string(),
+            tv_dir: tv_dir.to_path_buf(),
         };
         let conn = TcpStream::connect(format!("{host}:{port}"))?;
         client.session.set_tcp_stream(conn);
@@ -57,12 +66,17 @@ impl SshClient {
     }
 
     pub fn list_shows(&mut self) -> Result<Vec<String>> {
-        let output = self.execute(&format!("ls -1 '{}'", self.tv_dir))?;
+        let path_sane = Self::sanitise_shell_path(&self.tv_dir)?;
+        let output = self.execute(&format!("ls -1 '{}'", path_sane))?;
         Ok(output.split_terminator("\n").map(String::from).collect())
     }
 
     pub fn list_episodes(&mut self, show: &str) -> Result<Vec<String>> {
-        let output = self.execute(&format!("ls -1 '{}/{}'", self.tv_dir, show))?;
+        let mut path = self.tv_dir.clone();
+        path.push(show);
+        let path_sane = Self::sanitise_shell_path(&path)?;
+
+        let output = self.execute(&format!("ls -1 '{}'", path_sane))?;
         Ok(output.split_terminator("\n").map(String::from).collect())
     }
 

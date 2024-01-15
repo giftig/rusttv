@@ -53,7 +53,7 @@ fn perform_sync(conf: Config) -> Result<()> {
         remote.port,
         &remote.username,
         &remote.privkey,
-        &remote.tv_dir,
+        &PathBuf::from(&remote.tv_dir),
     )?;
     let known_shows = client.list_shows()?;
 
