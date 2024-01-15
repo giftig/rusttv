@@ -31,7 +31,7 @@ impl SshClient {
     // This undoubtedly misses some edge cases but will work ok given injection isn't a problem
     fn sanitise_shell_path(p: &Path) -> Result<String> {
         let s = p.to_str().ok_or(ClientError::PlatformError)?;
-        Ok(s.replace(r"'", r"\'"))
+        Ok(s.replace("\"", "\\\""))
     }
 
     pub fn connect(
@@ -67,7 +67,7 @@ impl SshClient {
 
     pub fn list_shows(&mut self) -> Result<Vec<String>> {
         let path_sane = Self::sanitise_shell_path(&self.tv_dir)?;
-        let output = self.execute(&format!("ls -1 '{}'", path_sane))?;
+        let output = self.execute(&format!("ls -1 \"{}\"", path_sane))?;
         Ok(output.split_terminator("\n").map(String::from).collect())
     }
 
@@ -76,7 +76,7 @@ impl SshClient {
         path.push(show);
         let path_sane = Self::sanitise_shell_path(&path)?;
 
-        let output = self.execute(&format!("ls -1 '{}'", path_sane))?;
+        let output = self.execute(&format!("ls -1 \"{}\"", path_sane))?;
         Ok(output.split_terminator("\n").map(String::from).collect())
     }
 

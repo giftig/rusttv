@@ -68,16 +68,16 @@ fn perform_sync(conf: Config) -> Result<()> {
 
     let remote_eps = get_remote_eps(&mut client, &local_eps)?;
 
-    let sync_eps: Vec<Episode> = diff_eps(local_eps, remote_eps);
+    let mut sync_eps: Vec<Episode> = diff_eps(local_eps, remote_eps);
+    sync_eps.sort();
 
-    // TODO: Sort this list alphabetically, it's very arbitrary right now
     for e in sync_eps {
         println!("Syncing the following episode:");
         println!("{}", e);
 
-        let mut remote_path = PathBuf::from(&conf.remote.tv_dir);
-        remote_path.push(&e.remote_subpath());
-        client.upload_file(&e.local_path, &remote_path)?;
+//        let mut remote_path = PathBuf::from(&conf.remote.tv_dir);
+//        remote_path.push(&e.remote_subpath());
+//        client.upload_file(&e.local_path, &remote_path)?;
     }
     Ok(())
 }

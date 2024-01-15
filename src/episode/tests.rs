@@ -2,8 +2,6 @@ use super::*;
 
 use std::path::{Path, PathBuf};
 
-use claim::*;
-
 use crate::tests as utils;
 
 fn tv_shows() -> Vec<String> {
@@ -88,15 +86,17 @@ fn valid_show_fuzzy() {
         path.push("S00 E00.mp4");
         utils::touch_file(&path).unwrap();
 
+        let expected = Episode {
+            local_path: path.clone(),
+            season_num: 0,
+            episode_num: 0,
+            ext: String::from("mp4"),
+            show_name: exact.to_string(),
+            show_certainty: 0.0 // not compared
+        };
         let actual = Episode::from(&path, &tv_shows(), &allowed_exts()).unwrap();
 
-        assert_eq!(actual.local_path, path);
-        assert_eq!(actual.season_num, 0);
-        assert_eq!(actual.episode_num, 0);
-        assert_eq!(actual.ext, String::from("mp4"));
-
-        assert_eq!(actual.show_name, exact);
-        assert_ge!(actual.show_certainty, SIM_THRESHOLD_GOOD);
+        assert_eq!(actual, expected);
     }
 }
 

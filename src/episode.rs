@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod tests;
 
+use std::cmp::Ordering;
 use std::fmt;
 use std::fs::canonicalize;
 use std::path::{Path, PathBuf};
@@ -11,7 +12,7 @@ use strsim;
 const SIM_THRESHOLD_PERFECT: f64 = 0.9;
 const SIM_THRESHOLD_GOOD: f64 = 0.7;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub struct Episode {
     pub local_path: PathBuf,
     pub show_name: String,
@@ -60,6 +61,37 @@ Confidence: {:.0}%
         write!(f, "{}", desc)
     }
 }
+
+impl PartialEq for Episode {
+    fn eq(&self, other: &Self) -> bool {
+        self.show_name == other.show_name &&
+            self.season_num == other.season_num &&
+            self.episode_num == other.episode_num &&
+            self.ext == other.ext
+    }
+}
+impl Eq for Episode {}
+
+impl Ord for Episode {
+    fn cmp(&self, other: &Self) -> Ordering {
+        if self.show_name != other.show_name {
+            return self.show_name.cmp(&other.show_name);
+        }
+        if self.season_num != other.season_num {
+            return self.season_num.cmp(&other.season_num);
+        }
+        if self.episode_num != other.episode_num {
+            return self.episode_num.cmp(&other.episode_num);
+        }
+        self.ext.cmp(&other.ext)
+    }
+}
+impl PartialOrd for Episode {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 
 impl Episode {
     fn derive_show(show: &str, known_shows: &Vec<String>) -> Option<(String, f64)> {
