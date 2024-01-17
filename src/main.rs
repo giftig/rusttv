@@ -12,6 +12,7 @@ use std::path::PathBuf;
 
 use console::Style;
 use dialoguer::Confirm;
+use proc_lock::proc_lock;
 
 use client::SshClient;
 use config::Config;
@@ -61,6 +62,7 @@ fn warn(msg: &str) -> () {
     println!("{}", yellow.apply_to(msg));
 }
 
+#[proc_lock(name = "rusttv.lock")]
 fn perform_sync(conf: Config) -> Result<()> {
     let remote = &conf.remote;
     let mut client = SshClient::connect(
