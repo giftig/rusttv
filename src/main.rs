@@ -10,6 +10,8 @@ use std::collections::HashMap;
 use std::error;
 use std::path::PathBuf;
 
+use dialoguer::Confirm;
+
 use client::SshClient;
 use config::Config;
 use episode::Episode;
@@ -31,6 +33,13 @@ fn get_remote_eps(
     }
 
     Ok(by_show)
+}
+
+fn prompt_confirm() -> bool {
+    Confirm::new()
+        .with_prompt("Is that okay?")
+        .interact()
+        .unwrap()
 }
 
 // Filter the parsed local episodes down to only those which aren't already present in the remote
@@ -71,9 +80,18 @@ fn perform_sync(conf: Config) -> Result<()> {
     let mut sync_eps: Vec<Episode> = diff_eps(local_eps, remote_eps);
     sync_eps.sort();
 
-    for e in sync_eps {
-        println!("Syncing the following episode:");
+    println!("Syncing the following episodes:");
+    for e in &sync_eps {
         println!("{}", e);
+    }
+
+    if conf.validation.prompt_confirmation && !prompt_confirm() {
+        println!("Aborting.");
+        return Ok(());
+    }
+
+    for e in &sync_eps {
+        println!("Syncing: {}", e.remote_subpath().display());
 
 //        let mut remote_path = PathBuf::from(&conf.remote.tv_dir);
 //        remote_path.push(&e.remote_subpath());

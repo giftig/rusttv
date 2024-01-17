@@ -10,3 +10,4 @@ default_dir = "${HOME}/.rusttv/sandbox/"
 [validation]
 allowed_exts = ["avi", "m4v", "ass", "3gp", "mkv", "mp4", "srt"]
 on_failure = "skip"
+prompt_confirmation = true

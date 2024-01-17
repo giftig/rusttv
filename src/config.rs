@@ -43,6 +43,9 @@ pub(super) struct Validation {
 
     #[serde(default = "default_on_failure")]
     pub on_failure: FailureAction,
+
+    #[serde(default = "default_prompt_confirmation")]
+    pub prompt_confirmation: bool,
 }
 
 // Validation defaults
@@ -51,6 +54,10 @@ fn default_allowed_exts() -> Vec<String> {
         .into_iter()
         .map(String::from)
         .collect()
+}
+
+fn default_prompt_confirmation() -> bool {
+    true
 }
 
 // Remote defaults
