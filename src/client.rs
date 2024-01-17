@@ -1,13 +1,12 @@
+pub mod upload;
+
 use std::fs::File;
-use std::io::{Error as IoError, Read, Write};
+use std::io::{Error as IoError, Read};
 use std::net::TcpStream;
 use std::path::{Path, PathBuf};
 
 use ssh2::{Error as SshError, Session};
 use thiserror::Error;
-
-// Buffer size for file transfers
-const BUF_SIZE: usize = 1024 * 4;
 
 pub struct SshClient {
     session: Session,
@@ -21,7 +20,9 @@ pub enum ClientError {
     #[error("An IO error occurred: {0}")]
     Io(#[from] IoError),
     #[error("A fatal error occurred while transforming OS-specific strings")]
-    PlatformError
+    PlatformError,
+    #[error("An unexpected threading error occurred")]
+    Thread
 }
 
 type Result<T> = std::result::Result<T, ClientError>;
@@ -83,44 +84,10 @@ impl SshClient {
     // TODO: Low level logic here, maybe split into another module
     pub fn upload_file(&mut self, local: &Path, remote: &Path) -> Result<()> {
         let size = local.metadata()?.len();
-        let mut out_chan = self.session.scp_send(remote, 0o644, size, None)?;
+        let out_chan = self.session.scp_send(remote, 0o644, size, None)?;
 
-        let mut local_file = File::open(local)?;
-        let mut buf: [u8; BUF_SIZE] = [0; BUF_SIZE];
+        let local_file = File::open(local)?;
 
-        loop {
-            let n = local_file.read(&mut buf)?;
-            if n == 0 {
-                break;
-            }
-
-            let out_buf = &buf[0..n];
-            consume_buffer(&mut out_chan, out_buf)?;
-
-            if n < BUF_SIZE {
-                break;
-            }
-        }
-
-        out_chan.send_eof()?;
-        out_chan.wait_eof()?;
-        out_chan.close()?;
-        out_chan.wait_close()?;
-
-        Ok(())
-    }
-}
-
-// Completely consume the buffer, allowing the writer to backpressure where needed
-fn consume_buffer(writer: &mut dyn Write, buf: &[u8]) -> Result<()> {
-    let mut total: usize = 0;
-
-    loop {
-        let written = writer.write(&buf[total..])?;
-        total += written;
-
-        if total == buf.len() {
-            return Ok(());
-        }
+        upload::handle_upload(local_file, out_chan, size)
     }
 }

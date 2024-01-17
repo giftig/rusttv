@@ -10,6 +10,7 @@ use std::collections::HashMap;
 use std::error;
 use std::path::PathBuf;
 
+use console::Style;
 use dialoguer::Confirm;
 
 use client::SshClient;
@@ -55,6 +56,11 @@ fn diff_eps(local: Vec<Episode>, remote: HashMap<String, Vec<String>>) -> Vec<Ep
         .collect()
 }
 
+fn warn(msg: &str) -> () {
+    let yellow = Style::new().yellow();
+    println!("{}", yellow.apply_to(msg));
+}
+
 fn perform_sync(conf: Config) -> Result<()> {
     let remote = &conf.remote;
     let mut client = SshClient::connect(
@@ -80,22 +86,27 @@ fn perform_sync(conf: Config) -> Result<()> {
     let mut sync_eps: Vec<Episode> = diff_eps(local_eps, remote_eps);
     sync_eps.sort();
 
+    if sync_eps.len() == 0 {
+        warn("Nothing to sync!");
+        return Ok(());
+    }
+
     println!("Syncing the following episodes:");
     for e in &sync_eps {
         println!("{}", e);
     }
 
     if conf.validation.prompt_confirmation && !prompt_confirm() {
-        println!("Aborting.");
+        warn("Aborting.");
         return Ok(());
     }
 
     for e in &sync_eps {
-        println!("Syncing: {}", e.remote_subpath().display());
+        println!("{}", e.remote_subpath().display());
 
-//        let mut remote_path = PathBuf::from(&conf.remote.tv_dir);
-//        remote_path.push(&e.remote_subpath());
-//        client.upload_file(&e.local_path, &remote_path)?;
+        let mut remote_path = PathBuf::from(&conf.remote.tv_dir);
+        remote_path.push(&e.remote_subpath());
+        client.upload_file(&e.local_path, &remote_path)?;
     }
     Ok(())
 }

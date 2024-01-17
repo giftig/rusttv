@@ -4,6 +4,7 @@ mod tests;
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use console::Style;
 use serde::Deserialize;
 use thiserror::Error;
 
@@ -60,15 +61,15 @@ impl LocalReader {
         match Episode::from(f, &self.known_shows, &self.allowed_exts) {
             Ok(ep) => Ok(ep),
             Err(e) => {
-                print!("ERROR: {}: {}. ", f.display(), e);
+                print_err(&format!("{}: {}. ", f.display(), e));
 
                 match self.on_failure {
                     FailureAction::Skip => {
-                        println!("Skipping this file.");
+                        println_err("Skipping this file.");
                         Err(ReadShowError::Skipped)
                     }
                     FailureAction::Abort => {
-                        println!("Aborting!");
+                        println_err("Aborting!");
                         Err(ReadShowError::Aborted)
                     }
                 }
@@ -128,4 +129,14 @@ impl LocalReader {
 
         Ok(eps)
     }
+}
+
+fn print_err(msg: &str) -> () {
+    let red = Style::new().red();
+    print!("{}", red.apply_to(msg));
+}
+
+fn println_err(msg: &str) -> () {
+    let red = Style::new().red();
+    println!("{}", red.apply_to(msg));
 }
