@@ -5,6 +5,7 @@ pub mod client;
 pub mod config;
 pub mod episode;
 pub mod local;
+pub mod log;
 
 use std::collections::HashMap;
 use std::error;
@@ -18,6 +19,7 @@ use client::SshClient;
 use config::Config;
 use episode::Episode;
 use local::LocalReader;
+use log::{Event as LogEvent, Logger};
 
 type Result<T> = std::result::Result<T, Box<dyn error::Error>>;
 
@@ -103,6 +105,9 @@ fn perform_sync(conf: Config) -> Result<()> {
         return Ok(());
     }
 
+    let logger = Logger::new(conf.log.local_path.clone());
+    let _ = logger.log_event(&LogEvent::new(&sync_eps));
+
     for e in &sync_eps {
         println!("{}", e.remote_subpath().display());
 
@@ -110,6 +115,7 @@ fn perform_sync(conf: Config) -> Result<()> {
         remote_path.push(&e.remote_subpath());
         client.upload_file(&e.local_path, &remote_path)?;
     }
+
     Ok(())
 }
 

@@ -3,6 +3,7 @@ mod tests;
 
 use std::env;
 use std::fs;
+use std::path::PathBuf;
 
 use regex::{Captures, Regex};
 use serde::Deserialize;
@@ -15,6 +16,7 @@ pub(super) struct Config {
     pub local: Local,
     pub remote: Remote,
     pub validation: Validation,
+    pub log: Logging
 }
 
 #[derive(Deserialize, Debug)]
@@ -46,6 +48,12 @@ pub(super) struct Validation {
 
     #[serde(default = "default_prompt_confirmation")]
     pub prompt_confirmation: bool,
+}
+
+#[derive(Deserialize, Debug)]
+pub(super) struct Logging {
+    #[serde(default = "default_local_log_path")]
+    pub local_path: PathBuf,
 }
 
 // Validation defaults
@@ -80,6 +88,11 @@ fn default_tv_dir() -> String {
 // Local defaults
 fn default_on_failure() -> FailureAction {
     FailureAction::Skip
+}
+
+// Log defaults
+fn default_local_log_path() -> PathBuf {
+    PathBuf::from(sub_vars("${HOME}/.rusttv/events/"))
 }
 
 fn sub_vars(line: &str) -> String {

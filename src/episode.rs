@@ -7,12 +7,13 @@ use std::fs::canonicalize;
 use std::path::{Path, PathBuf};
 
 use regex::Regex;
+use serde::Serialize;
 use strsim;
 
 const SIM_THRESHOLD_PERFECT: f64 = 0.9;
 const SIM_THRESHOLD_GOOD: f64 = 0.7;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct Episode {
     pub local_path: PathBuf,
     pub show_name: String,
