@@ -26,7 +26,6 @@ pub(super) struct Local {
 
 #[derive(Deserialize, Debug)]
 pub(super) struct Remote {
-    #[serde(default = "default_host")]
     pub host: String,
     #[serde(default = "default_port")]
     pub port: usize,
@@ -69,9 +68,6 @@ fn default_prompt_confirmation() -> bool {
 }
 
 // Remote defaults
-fn default_host() -> String {
-    "giftig-pi".to_string()
-}
 fn default_port() -> usize {
     22
 }
@@ -125,7 +121,7 @@ fn sub_vars(line: &str) -> String {
 
 fn read_raw() -> String {
     let config_files: [&str; 3] = [
-        "$HOME/.rusttv/config.toml",
+        "${HOME}/.rusttv/config.toml",
         "/usr/share/rusttv/config.toml",
         "config.toml",
     ];
