@@ -1,5 +1,7 @@
 .PHONY: dist
 
+default: clean build/release dist/cross
+
 test:
 	@cargo test
 
