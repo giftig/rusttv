@@ -9,6 +9,7 @@ pub mod log;
 
 use std::collections::HashMap;
 use std::error;
+use std::io;
 use std::path::PathBuf;
 
 use console::Style;
@@ -59,6 +60,7 @@ fn diff_eps(local: Vec<Episode>, remote: HashMap<String, Vec<String>>) -> Vec<Ep
         .collect()
 }
 
+// TODO: Make this a macro?
 fn warn(msg: &str) -> () {
     let yellow = Style::new().yellow();
     println!("{}", yellow.apply_to(msg));
@@ -115,11 +117,18 @@ fn perform_sync(conf: Config) -> Result<()> {
     let _ = logger.log_event(&LogEvent::new(&sync_eps));
 
     for e in &sync_eps {
+        println!("");
         println!("{}", e.remote_subpath().display());
 
         let mut remote_path = PathBuf::from(&conf.remote.tv_dir);
         remote_path.push(&e.remote_subpath());
         client.upload_file(&e.local_path, &remote_path)?;
+    }
+
+    if conf.ui.block_closing {
+        println!("");
+        println!("Finished. Press enter to exit.");
+        io::stdin().read_line(&mut String::new()).unwrap();
     }
 
     Ok(())

@@ -16,7 +16,10 @@ pub(super) struct Config {
     pub local: Local,
     pub remote: Remote,
     pub validation: Validation,
-    pub log: Logging
+    #[serde(default = "default_log")]
+    pub log: Logging,
+    #[serde(default = "default_ui")]
+    pub ui: Ui
 }
 
 #[derive(Deserialize, Debug)]
@@ -57,6 +60,14 @@ pub(super) struct Logging {
     pub local_path: PathBuf,
 }
 
+#[derive(Deserialize, Debug)]
+pub(super) struct Ui {
+    // Whether to require user input before exiting; easier for windows users
+    // to see the final output before the terminal window disappears
+    #[serde(default = "default_block_closing")]
+    pub block_closing: bool,
+}
+
 // Validation defaults
 fn default_allowed_exts() -> Vec<String> {
     vec!["avi", "m4v", "ass", "3gp", "mkv", "mp4", "srt"]
@@ -94,8 +105,19 @@ fn default_on_failure() -> FailureAction {
 }
 
 // Log defaults
+fn default_log() -> Logging {
+    Logging { local_path: default_local_log_path() }
+}
 fn default_local_log_path() -> PathBuf {
     PathBuf::from(sub_vars("${HOME}/.rusttv/events/"))
+}
+
+// UI defaults
+fn default_ui() -> Ui {
+    Ui { block_closing: false }
+}
+fn default_block_closing() -> bool {
+    false
 }
 
 fn sub_vars(line: &str) -> String {
