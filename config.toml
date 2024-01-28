@@ -13,3 +13,11 @@ prompt_confirmation = true
 
 [ui]
 block_closing = true
+
+[osmc]
+enable_refresh = true
+host = "rusttv"
+protocol = "http"
+prefix = "/"
+username = "osmc"
+password = "osmc"

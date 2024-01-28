@@ -1,3 +1,4 @@
+pub mod osmc;
 pub mod upload;
 
 use std::fs::File;

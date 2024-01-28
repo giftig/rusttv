@@ -6,6 +6,7 @@ use std::fmt;
 use std::fs::canonicalize;
 use std::path::{Path, PathBuf};
 
+use console::Style;
 use regex::Regex;
 use serde::Serialize;
 use strsim;
@@ -46,17 +47,39 @@ impl fmt::Display for ParseError {
 
 impl fmt::Display for Episode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        // TODO: dedent?
-        // FIXME: Colour
+        let yellow = Style::new().yellow();
+        let cyan = Style::new().cyan();
+        let green = Style::new().green();
+
+        let pretty_confidence = {
+            let formatted = format!("{:.0}%", self.show_certainty * 100.0);
+            if self.show_certainty < SIM_THRESHOLD_PERFECT {
+                yellow.apply_to(formatted)
+            } else {
+                green.apply_to(formatted)
+            }
+        };
+
+        let local_trunc = {
+            let full = self.local_path.to_string_lossy();
+            let len = full.len();
+
+            if len <= 40 { full.to_string() } else { format!("…{}", &full[len - 39..]) }
+        };
+
+        let pretty_remote = format!(
+            "{}: S{:02} E{:02}",
+            self.show_name,
+            self.season_num,
+            self.episode_num
+        );
+
         let desc = format!(
-            r#"
-Local file: {}
-Represents: {}
-Confidence: {:.0}%
-            "#,
-            self.local_path.display(),
-            self.remote_subpath().display(),
-            self.show_certainty * 100.0
+            "{:>40} {} {} (confidence: {})",
+            local_trunc,
+            cyan.apply_to("--->"),
+            pretty_remote,
+            pretty_confidence
         );
 
         write!(f, "{}", desc)

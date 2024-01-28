@@ -17,7 +17,8 @@ use dialoguer::Confirm;
 use proc_lock::proc_lock;
 
 use client::{Auth as SshAuth, SshClient};
-use config::Config;
+use client::osmc::OsmcClient;
+use config::{Config, Osmc as OsmcConfig};
 use episode::Episode;
 use local::LocalReader;
 use log::{Event as LogEvent, Logger};
@@ -60,6 +61,31 @@ fn diff_eps(local: Vec<Episode>, remote: HashMap<String, Vec<String>>) -> Vec<Ep
         .collect()
 }
 
+fn osmc_refresh(cfg: &OsmcConfig) -> () {
+    eprintln!("");
+    eprintln!("");
+    eprint!("Triggering metadata refresh on OSMC... ");
+
+    match OsmcClient::new(
+        &cfg.protocol,
+        &cfg.host,
+        cfg.port,
+        &cfg.prefix,
+        &cfg.username,
+        &cfg.password
+    ).trigger_refresh() {
+        Ok(_) => {
+            eprintln!("[ {} ]", Style::new().green().apply_to("OK"))
+        }
+        Err(e) => {
+            eprintln!("[ {} ]", Style::new().red().apply_to("FAILED"));
+            eprintln!("");
+            eprintln!("Failure reason: {}. You might need to manually refresh via OSMC menus.", e)
+        }
+    };
+
+}
+
 // TODO: Make this a macro?
 fn warn(msg: &str) -> () {
     let yellow = Style::new().yellow();
@@ -69,6 +95,15 @@ fn warn(msg: &str) -> () {
 #[proc_lock(name = "rusttv.lock")]
 fn perform_sync(conf: Config) -> Result<()> {
     let remote = &conf.remote;
+    let complete = || {
+        if conf.ui.block_closing {
+            println!("");
+            println!("Finished. Press enter to exit.");
+            io::stdin().read_line(&mut String::new()).unwrap();
+        }
+        Ok(())
+    };
+
     let auth = match (&remote.privkey, &remote.password) {
         (Some(privkey), _) => SshAuth::Privkey(privkey.to_string()),
         (_, Some(password)) => SshAuth::Password(password.to_string()),
@@ -100,7 +135,7 @@ fn perform_sync(conf: Config) -> Result<()> {
 
     if sync_eps.len() == 0 {
         warn("Nothing to sync!");
-        return Ok(());
+        return complete();
     }
 
     println!("Syncing the following episodes:");
@@ -110,14 +145,14 @@ fn perform_sync(conf: Config) -> Result<()> {
 
     if conf.validation.prompt_confirmation && !prompt_confirm() {
         warn("Aborting.");
-        return Ok(());
+        return complete();
     }
 
     let logger = Logger::new(conf.log.local_path.clone());
     let _ = logger.log_event(&LogEvent::new(&sync_eps));
 
     for e in &sync_eps {
-        println!("");
+        println!("\n");
         println!("{}", e.remote_subpath().display());
 
         let mut remote_path = PathBuf::from(&conf.remote.tv_dir);
@@ -125,13 +160,11 @@ fn perform_sync(conf: Config) -> Result<()> {
         client.upload_file(&e.local_path, &remote_path)?;
     }
 
-    if conf.ui.block_closing {
-        println!("");
-        println!("Finished. Press enter to exit.");
-        io::stdin().read_line(&mut String::new()).unwrap();
+    if conf.osmc.enable_refresh {
+        osmc_refresh(&conf.osmc);
     }
 
-    Ok(())
+    complete()
 }
 
 fn main() {

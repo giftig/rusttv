@@ -16,10 +16,11 @@ pub(super) struct Config {
     pub local: Local,
     pub remote: Remote,
     pub validation: Validation,
+    pub osmc: Osmc,
     #[serde(default = "default_log")]
     pub log: Logging,
     #[serde(default = "default_ui")]
-    pub ui: Ui
+    pub ui: Ui,
 }
 
 #[derive(Deserialize, Debug)]
@@ -66,6 +67,23 @@ pub(super) struct Ui {
     // to see the final output before the terminal window disappears
     #[serde(default = "default_block_closing")]
     pub block_closing: bool,
+}
+
+#[derive(Deserialize, Debug)]
+pub(super) struct Osmc {
+    #[serde(default = "default_osmc_enable_refresh")]
+    pub enable_refresh: bool,
+    #[serde(default = "default_osmc_protocol")]
+    pub protocol: String,
+    pub host: String,
+    #[serde(default = "default_osmc_port")]
+    pub port: Option<usize>,
+    #[serde(default = "default_osmc_prefix")]
+    pub prefix: String,
+    #[serde(default = "default_osmc_username")]
+    pub username: String,
+    #[serde(default = "default_osmc_password")]
+    pub password: String,
 }
 
 // Validation defaults
@@ -118,6 +136,26 @@ fn default_ui() -> Ui {
 }
 fn default_block_closing() -> bool {
     false
+}
+
+// OSMC defaults
+fn default_osmc_enable_refresh() -> bool {
+    true
+}
+fn default_osmc_protocol() -> String {
+    "http".to_string()
+}
+fn default_osmc_port() -> Option<usize> {
+    None
+}
+fn default_osmc_prefix() -> String {
+    "/".to_string()
+}
+fn default_osmc_username() -> String {
+    "osmc".to_string()
+}
+fn default_osmc_password() -> String {
+    "osmc".to_string()
 }
 
 fn sub_vars(line: &str) -> String {
