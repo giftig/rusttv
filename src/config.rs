@@ -21,7 +21,7 @@ pub(super) struct Config {
 
 #[derive(Deserialize, Debug)]
 pub(super) struct Local {
-    pub default_dir: String,
+    pub tv_dir: String,
 }
 
 #[derive(Deserialize, Debug)]
@@ -31,8 +31,10 @@ pub(super) struct Remote {
     pub port: usize,
     #[serde(default = "default_username")]
     pub username: String,
+    #[serde(default = "default_password")]
+    pub password: Option<String>,
     #[serde(default = "default_privkey")]
-    pub privkey: String,
+    pub privkey: Option<String>,
     #[serde(default = "default_tv_dir")]
     pub tv_dir: String,
 }
@@ -74,8 +76,13 @@ fn default_port() -> usize {
 fn default_username() -> String {
     "osmc".to_string()
 }
-fn default_privkey() -> String {
-    "${HOME}/.ssh/id_rsa".to_string()
+fn default_password() -> Option<String> {
+    // Also accept password as an env var to make testing a bit easier without
+    // writing passwords into config files
+    env::var("RUSTTV_SSH_PASSWORD").ok()
+}
+fn default_privkey() -> Option<String> {
+    None
 }
 fn default_tv_dir() -> String {
     "/usr/store/tv/".to_string()
@@ -144,8 +151,13 @@ pub(super) fn read() -> Config {
     let mut conf: Config = toml::from_str(&raw).expect("Invalid config file!");
 
     // Substitute env vars in selected fields
-    conf.local.default_dir = sub_vars(&conf.local.default_dir).to_owned();
-    conf.remote.tv_dir = sub_vars(&conf.remote.tv_dir).to_owned();
-    conf.remote.privkey = sub_vars(&conf.remote.privkey).to_owned();
+    // TODO: Can I use a macro to do this, and/or a feature of serde?
+    conf.local.tv_dir = sub_vars(&conf.local.tv_dir).to_string();
+    conf.remote.tv_dir = sub_vars(&conf.remote.tv_dir).to_string();
+    conf.remote.privkey = conf.remote.privkey.map(|v| sub_vars(&v).to_string());
+
+    if conf.remote.privkey.is_none() && conf.remote.password.is_none() {
+        panic!("Neither privkey nor password specified in config, you must provide one!")
+    }
     conf
 }

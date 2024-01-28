@@ -25,6 +25,11 @@ pub enum ClientError {
     Thread
 }
 
+pub enum Auth {
+    Password(String),
+    Privkey(String)
+}
+
 type Result<T> = std::result::Result<T, ClientError>;
 
 impl SshClient {
@@ -39,7 +44,7 @@ impl SshClient {
         host: &str,
         port: usize,
         username: &str,
-        privkey: &str,
+        auth: &Auth,
         tv_dir: &Path,
     ) -> Result<SshClient> {
         let mut client = SshClient {
@@ -49,9 +54,11 @@ impl SshClient {
         let conn = TcpStream::connect(format!("{host}:{port}"))?;
         client.session.set_tcp_stream(conn);
         client.session.handshake()?;
-        client
-            .session
-            .userauth_pubkey_file(username, None, Path::new(privkey), None)?;
+
+        match auth {
+            Auth::Password(pwd) => client.session.userauth_password(username, &pwd)?,
+            Auth::Privkey(file) => client.session.userauth_pubkey_file(username, None, Path::new(file), None)?,
+        }
 
         Ok(client)
     }
@@ -81,7 +88,6 @@ impl SshClient {
         Ok(output.split_terminator("\n").map(String::from).collect())
     }
 
-    // TODO: Low level logic here, maybe split into another module
     pub fn upload_file(&mut self, local: &Path, remote: &Path) -> Result<()> {
         let size = local.metadata()?.len();
         let out_chan = self.session.scp_send(remote, 0o644, size, None)?;

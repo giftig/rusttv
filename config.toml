@@ -4,7 +4,7 @@ privkey = "${HOME}/.ssh/id_rsa"
 tv_dir = "/home/osmc/rusttv-sandbox/"
 
 [local]
-default_dir = "${HOME}/.rusttv/sandbox/"
+tv_dir = "${HOME}/.rusttv/sandbox/"
 
 [validation]
 allowed_exts = ["avi", "m4v", "ass", "3gp", "mkv", "mp4", "srt"]

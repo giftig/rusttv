@@ -15,7 +15,7 @@ use console::Style;
 use dialoguer::Confirm;
 use proc_lock::proc_lock;
 
-use client::SshClient;
+use client::{Auth as SshAuth, SshClient};
 use config::Config;
 use episode::Episode;
 use local::LocalReader;
@@ -67,11 +67,17 @@ fn warn(msg: &str) -> () {
 #[proc_lock(name = "rusttv.lock")]
 fn perform_sync(conf: Config) -> Result<()> {
     let remote = &conf.remote;
+    let auth = match (&remote.privkey, &remote.password) {
+        (Some(privkey), _) => SshAuth::Privkey(privkey.to_string()),
+        (_, Some(password)) => SshAuth::Password(password.to_string()),
+        _ => panic!("No privkey or password in config!"),
+    };
+
     let mut client = SshClient::connect(
         &remote.host,
         remote.port,
         &remote.username,
-        &remote.privkey,
+        &auth,
         &PathBuf::from(&remote.tv_dir),
     )?;
     let known_shows = client.list_shows()?;
@@ -83,7 +89,7 @@ fn perform_sync(conf: Config) -> Result<()> {
         conf.validation.allowed_exts.clone(),
         conf.validation.on_failure,
     );
-    let local_eps = reader.read_local(&PathBuf::from(&conf.local.default_dir))?;
+    let local_eps = reader.read_local(&PathBuf::from(&conf.local.tv_dir))?;
 
     let remote_eps = get_remote_eps(&mut client, &local_eps)?;
 
@@ -122,9 +128,6 @@ fn perform_sync(conf: Config) -> Result<()> {
 fn main() {
     let conf = config::read();
 
-    // FIXME: OBTAIN A PROCESS LOCK.
-    // What do I do if we panic and fail to clean it up?
-    // Maybe just avoid panicking, and add instructions to delete it if panic happens anyway
     perform_sync(conf)
         .map_err(|e| {
             println!("{}", e);

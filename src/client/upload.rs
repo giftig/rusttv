@@ -44,7 +44,7 @@ pub(super) fn handle_upload(mut local_file: File, mut out_chan: Channel, size: u
     // better way to do this is to return the channel and pass it up to a higher level
     let bar = ProgressBar::new(size)
         .with_style(
-            ProgressStyle::with_template("{wide_bar:.green/blue} {eta} left ({bytes_per_sec}) {percent}% {msg} ").unwrap()
+            ProgressStyle::with_template("{wide_bar:.green/blue} {eta} left ({bytes_per_sec}) {percent}% {msg:.green} ").unwrap()
         );
     for packet in rx {
         if let Ok(p) = packet.try_into() {
@@ -53,7 +53,7 @@ pub(super) fn handle_upload(mut local_file: File, mut out_chan: Channel, size: u
     }
 
     sub.join().map_err(|_| ClientError::Thread)??;
-    bar.finish_with_message("✅");
+    bar.finish_with_message("OK");
 
     Ok(())
 }
