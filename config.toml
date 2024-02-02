@@ -11,6 +11,10 @@ allowed_exts = ["avi", "m4v", "ass", "3gp", "mkv", "mp4", "srt"]
 on_failure = "skip"
 prompt_confirmation = true
 
+[validation.tmdb]
+enabled = true
+token = "${TMDB_ACCESS_TOKEN}"
+
 [ui]
 block_closing = true
 
@@ -21,3 +25,4 @@ protocol = "http"
 prefix = "/"
 username = "osmc"
 password = "osmc"
+

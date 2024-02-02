@@ -2,6 +2,7 @@ use super::*;
 
 use std::path::PathBuf;
 
+use crate::resolver::strsim::StrsimResolver;
 use crate::tests as utils;
 
 fn tv_shows() -> Vec<String> {
@@ -15,16 +16,20 @@ fn tv_shows() -> Vec<String> {
     .collect()
 }
 
+fn resolver() -> StrsimResolver {
+    StrsimResolver::new(&tv_shows())
+}
+
 fn allowed_exts() -> Vec<String> {
     vec!["mkv", "mp4"].into_iter().map(String::from).collect()
 }
 
 fn reader_skip() -> LocalReader {
-    LocalReader::new(tv_shows(), allowed_exts(), FailureAction::Skip)
+    LocalReader::new(Box::new(resolver()), allowed_exts(), FailureAction::Skip)
 }
 
 fn reader_abort() -> LocalReader {
-    LocalReader::new(tv_shows(), allowed_exts(), FailureAction::Abort)
+    LocalReader::new(Box::new(resolver()), allowed_exts(), FailureAction::Abort)
 }
 
 fn setup_all_valid(prefix: &str) -> () {
@@ -49,6 +54,18 @@ fn setup_some_invalid(prefix: &str) -> () {
     for p in paths {
         utils::create_path(&format!("{}/{}", prefix, p));
     }
+}
+
+#[test]
+fn read_local_all_valid() {
+    let mut prefix = PathBuf::from(utils::PATH_PREFIX);
+    let test_path = "local-all-valid";
+    prefix.push(test_path);
+
+    setup_all_valid(test_path);
+
+    let result = reader_abort().read_local(&prefix).unwrap();
+    assert_eq!(result.len(), 2);
 }
 
 #[test]

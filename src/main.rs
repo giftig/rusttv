@@ -6,6 +6,7 @@ pub mod config;
 pub mod episode;
 pub mod local;
 pub mod log;
+pub mod resolver;
 
 use std::collections::HashMap;
 use std::error;
@@ -18,10 +19,14 @@ use proc_lock::proc_lock;
 
 use client::{Auth as SshAuth, SshClient};
 use client::osmc::OsmcClient;
-use config::{Config, Osmc as OsmcConfig};
+use config::{Config, Osmc as OsmcConfig, Tmdb as TmdbConfig};
 use episode::Episode;
 use local::LocalReader;
 use log::{Event as LogEvent, Logger};
+use resolver::ShowResolver;
+use resolver::multi::MultiResolver;
+use resolver::strsim::StrsimResolver;
+use resolver::tmdb::TmdbResolver;
 
 type Result<T> = std::result::Result<T, Box<dyn error::Error>>;
 
@@ -39,6 +44,22 @@ fn get_remote_eps(
     }
 
     Ok(by_show)
+}
+
+fn get_resolver<T: AsRef<str>>(known_shows: &[T], tmdb: &TmdbConfig) -> Box<dyn ShowResolver> {
+    let strsim_resolver = StrsimResolver::new(known_shows);
+
+    if !tmdb.enabled {
+        return Box::new(strsim_resolver);
+    }
+    let token = tmdb.token.as_ref().expect("Missing TMDB token in config!");
+    let tmdb_resolver = TmdbResolver::new(&tmdb.protocol, &tmdb.host, &token);
+
+    let resolvers: Vec<Box<dyn ShowResolver>> = vec![
+        Box::new(strsim_resolver),
+        Box::new(tmdb_resolver)
+    ];
+    Box::new(MultiResolver::new(resolvers))
 }
 
 fn prompt_confirm() -> bool {
@@ -121,8 +142,10 @@ fn perform_sync(conf: Config) -> Result<()> {
 
     println!("Found {} TV shows on remote host", known_shows.len());
 
+    let show_resolver = get_resolver(&known_shows, &conf.validation.tmdb);
+
     let reader = LocalReader::new(
-        known_shows,
+        show_resolver,
         conf.validation.allowed_exts.clone(),
         conf.validation.on_failure,
     );

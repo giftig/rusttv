@@ -51,6 +51,9 @@ pub(super) struct Validation {
     #[serde(default = "default_on_failure")]
     pub on_failure: FailureAction,
 
+    #[serde(default = "default_tmdb")]
+    pub tmdb: Tmdb,
+
     #[serde(default = "default_prompt_confirmation")]
     pub prompt_confirmation: bool,
 }
@@ -84,6 +87,18 @@ pub(super) struct Osmc {
     pub username: String,
     #[serde(default = "default_osmc_password")]
     pub password: String,
+}
+
+#[derive(Deserialize, Debug)]
+pub(super) struct Tmdb {
+    #[serde(default = "default_tmdb_enabled")]
+    pub enabled: bool,
+    #[serde(default = "default_tmdb_protocol")]
+    pub protocol: String,
+    #[serde(default = "default_tmdb_host")]
+    pub host: String,
+    #[serde(default = "default_tmdb_token")]
+    pub token: Option<String>,
 }
 
 // Validation defaults
@@ -158,6 +173,28 @@ fn default_osmc_password() -> String {
     "osmc".to_string()
 }
 
+// TMDB defaults
+fn default_tmdb() -> Tmdb {
+    Tmdb {
+        enabled: default_tmdb_enabled(),
+        protocol: default_tmdb_protocol(),
+        host: default_tmdb_host(),
+        token: default_tmdb_token()
+    }
+}
+fn default_tmdb_enabled() -> bool {
+    false
+}
+fn default_tmdb_protocol() -> String {
+    "https".to_string()
+}
+fn default_tmdb_host() -> String {
+    "api.themoviedb.org".to_string()
+}
+fn default_tmdb_token() -> Option<String> {
+    None
+}
+
 fn sub_vars(line: &str) -> String {
     // Simple var pattern, require braces: ${HOME}
     let var_pattern = Regex::new(r"\$\{(?<name>[A-Za-z0-9_]+)\}").unwrap();
@@ -215,9 +252,15 @@ pub(super) fn read() -> Config {
     conf.local.tv_dir = sub_vars(&conf.local.tv_dir).to_string();
     conf.remote.tv_dir = sub_vars(&conf.remote.tv_dir).to_string();
     conf.remote.privkey = conf.remote.privkey.map(|v| sub_vars(&v).to_string());
+    conf.validation.tmdb.token = conf.validation.tmdb.token.map(|v| sub_vars(&v).to_string());
 
     if conf.remote.privkey.is_none() && conf.remote.password.is_none() {
         panic!("Neither privkey nor password specified in config, you must provide one!")
     }
+
+    if conf.validation.tmdb.enabled && conf.validation.tmdb.token.is_none() {
+        panic!("TMDB token must be provided if TMDB is enabled!")
+    }
+
     conf
 }

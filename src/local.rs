@@ -2,6 +2,7 @@
 mod tests;
 
 use std::fs;
+use std::fs::canonicalize;
 use std::path::{Path, PathBuf};
 
 use console::Style;
@@ -9,6 +10,7 @@ use serde::Deserialize;
 use thiserror::Error;
 
 use crate::episode::Episode;
+use crate::resolver::ShowResolver;
 
 #[derive(Error, Debug, PartialEq)]
 pub enum ReadError {
@@ -39,29 +41,52 @@ pub enum FailureAction {
 }
 
 pub struct LocalReader {
-    known_shows: Vec<String>,
+    show_resolver: Box<dyn ShowResolver>,
     allowed_exts: Vec<String>,
     on_failure: FailureAction,
 }
 
 impl LocalReader {
     pub fn new(
-        known_shows: Vec<String>,
+        show_resolver: Box<dyn ShowResolver>,
         allowed_exts: Vec<String>,
         on_failure: FailureAction,
     ) -> LocalReader {
         LocalReader {
-            known_shows: known_shows,
+            show_resolver: show_resolver,
             allowed_exts: allowed_exts,
             on_failure: on_failure,
         }
     }
 
-    fn read_one(&self, f: &Path) -> Result<Episode, ReadShowError> {
-        match Episode::from(f, &self.known_shows, &self.allowed_exts) {
+    fn resolve_show(&self, show: &str) -> Result<(String, f64), ReadShowError> {
+        match self.show_resolver.resolve(show) {
+            Some(res) => Ok(res),
+            _ => {
+                print_err(&format!("{}: Could not resolve TV show name. ", show));
+                match self.on_failure {
+                    FailureAction::Skip => {
+                        println_err("Skipping this TV show.");
+                        Err(ReadShowError::Skipped)
+                    }
+                    FailureAction::Abort => {
+                        println_err("Aborting!");
+                        Err(ReadShowError::Aborted)
+                    }
+                }
+            }
+        }
+    }
+
+    fn read_one(&self, path: &Path, show_name: &str, show_certainty: f64) -> Result<Episode, ReadShowError> {
+        let filename = path.file_name()
+            .and_then(|f| f.to_str())
+            .ok_or(ReadShowError::BadPath(path.to_path_buf()))?;
+
+        match Episode::from(path, filename, show_name, show_certainty, &self.allowed_exts) {
             Ok(ep) => Ok(ep),
             Err(e) => {
-                print_err(&format!("{}: {}. ", f.display(), e));
+                print_err(&format!("{}: {}. ", path.display(), e));
 
                 match self.on_failure {
                     FailureAction::Skip => {
@@ -78,6 +103,13 @@ impl LocalReader {
     }
 
     fn read_show(&self, dir: &Path) -> Result<Vec<Episode>, ReadShowError> {
+        let abs = canonicalize(dir).map_err(|_| ReadShowError::BadPath(dir.to_path_buf()))?;
+        let raw_show = abs.file_name()
+            .and_then(|f| f.to_str())
+            .ok_or(ReadShowError::BadPath(abs.to_path_buf()))?;
+
+        let (show_name, show_certainty) = self.resolve_show(raw_show)?;
+
         let found_eps = fs::read_dir(dir).map_err(|_| ReadShowError::BadPath(dir.to_path_buf()))?;
 
         let mut eps = vec![];
@@ -86,7 +118,7 @@ impl LocalReader {
             let res: Result<Episode, ReadShowError> = entry
                 .map_err(|_| ReadShowError::BadPath(dir.to_path_buf()))
                 .map(|e| e.path())
-                .and_then(|p| self.read_one(&p));
+                .and_then(|p| self.read_one(&p, &show_name, show_certainty));
 
             match res {
                 Ok(ep) => eps.push(ep),

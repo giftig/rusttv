@@ -3,16 +3,12 @@ mod tests;
 
 use std::cmp::Ordering;
 use std::fmt;
-use std::fs::canonicalize;
 use std::path::{Path, PathBuf};
 
 use console::Style;
 use regex::Regex;
 use serde::Serialize;
-use strsim;
 
-const SIM_THRESHOLD_PERFECT: f64 = 0.9;
-const SIM_THRESHOLD_GOOD: f64 = 0.7;
 
 #[derive(Clone, Debug, Serialize)]
 pub struct Episode {
@@ -32,6 +28,10 @@ pub enum ParseError {
     BadExtension,
 }
 
+const CERTAINTY_PERFECT: f64 = 0.9;
+const CERTAINTY_GOOD: f64 = 0.7;
+const CERTAINTY_UNSURE: f64 = 0.2;
+
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let desc = match self {
@@ -47,16 +47,22 @@ impl fmt::Display for ParseError {
 
 impl fmt::Display for Episode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let red = Style::new().red();
+        let red_bold = Style::new().red().bold();
         let yellow = Style::new().yellow();
         let cyan = Style::new().cyan();
         let green = Style::new().green();
 
         let pretty_confidence = {
             let formatted = format!("{:.0}%", self.show_certainty * 100.0);
-            if self.show_certainty < SIM_THRESHOLD_PERFECT {
-                yellow.apply_to(formatted)
-            } else {
+            if self.show_certainty > CERTAINTY_PERFECT {
                 green.apply_to(formatted)
+            } else if self.show_certainty > CERTAINTY_GOOD {
+                yellow.apply_to(formatted)
+            } else if self.show_certainty > CERTAINTY_UNSURE {
+                red.apply_to(formatted)
+            } else {
+                red_bold.apply_to(formatted)
             }
         };
 
@@ -118,36 +124,6 @@ impl PartialOrd for Episode {
 
 
 impl Episode {
-    fn derive_show(show: &str, known_shows: &Vec<String>) -> Option<(String, f64)> {
-        let s = show.to_string();
-
-        if known_shows.contains(&s) {
-            return Some((s, 1.0));
-        }
-
-        let mut best_thresh: f64 = 0.0;
-        let mut best_match: Option<&str> = None;
-
-        for known in known_shows {
-            let thresh = strsim::jaro(&show, &known);
-
-            if thresh >= SIM_THRESHOLD_PERFECT {
-                return Some((known.clone(), thresh));
-            }
-
-            if thresh > best_thresh {
-                best_thresh = thresh;
-                best_match = Some(&known);
-            }
-        }
-
-        if best_thresh >= SIM_THRESHOLD_GOOD {
-            return best_match.map(|s| (s.to_string(), best_thresh));
-        }
-
-        None
-    }
-
     // Parse filename into season, episode, and extension; e.g. S01 E01.mkv -> (1, 1, mkv)
     fn parse_filename(filename: &str) -> Option<(u32, u32, String)> {
         let parse = |pattern: Regex| {
@@ -174,34 +150,26 @@ impl Episode {
         None
     }
 
-    pub fn from(
+    pub fn from<T: AsRef<str>>(
         path: &Path,
-        known_shows: &Vec<String>,
-        allowed_exts: &Vec<String>,
+        filename: &str,
+        show_name: &str,
+        show_certainty: f64,
+        allowed_exts: &[T],
     ) -> Result<Episode, ParseError> {
-        let abs_path = canonicalize(path).map_err(|_| ParseError::BadPath)?;
-        let comps: Vec<&str> = abs_path.iter().map(|s| s.to_str().unwrap()).collect();
+        let exts: Vec<String> = allowed_exts.iter().map(|s| s.as_ref().to_string()).collect();
 
-        if comps.len() <= 1 {
-            return Err(ParseError::BadPath);
-        }
-
-        let raw_show = comps[comps.len() - 2];
-        let filename = comps[comps.len() - 1];
-
-        let (show_name, certainty) =
-            Self::derive_show(raw_show, known_shows).ok_or(ParseError::BadShow)?;
         let (season_num, episode_num, ext) =
-            Self::parse_filename(&filename).ok_or(ParseError::BadFilename)?;
+            Self::parse_filename(filename).ok_or(ParseError::BadFilename)?;
 
-        if !allowed_exts.contains(&ext) {
+        if !exts.contains(&ext) {
             return Err(ParseError::BadExtension);
         }
 
         Ok(Episode {
-            local_path: PathBuf::from(path),
-            show_name: show_name,
-            show_certainty: certainty,
+            local_path: path.to_path_buf(),
+            show_name: show_name.to_string(),
+            show_certainty: show_certainty,
             season_num: season_num,
             episode_num: episode_num,
             ext: ext,

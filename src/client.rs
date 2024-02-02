@@ -20,6 +20,8 @@ pub enum ClientError {
     Ssh(#[from] SshError),
     #[error("An IO error occurred: {0}")]
     Io(#[from] IoError),
+    #[error("An unexpected error occurred while ensuring TV show directory exists!")]
+    EnsureDirError,
     #[error("A fatal error occurred while transforming OS-specific strings")]
     PlatformError,
     #[error("An unexpected threading error occurred")]
@@ -74,6 +76,13 @@ impl SshClient {
         Ok(output)
     }
 
+    fn ensure_dir_exists(&mut self, path: &Path) -> Result<()> {
+        let dir = path.parent().ok_or(ClientError::EnsureDirError)?;
+        let dir_sane = Self::sanitise_shell_path(dir)?;
+        self.execute(&format!("mkdir -p \"{}\"", dir_sane))?;
+        Ok(())
+    }
+
     pub fn list_shows(&mut self) -> Result<Vec<String>> {
         let path_sane = Self::sanitise_shell_path(&self.tv_dir)?;
         let output = self.execute(&format!("ls -1 \"{}\"", path_sane))?;
@@ -90,6 +99,8 @@ impl SshClient {
     }
 
     pub fn upload_file(&mut self, local: &Path, remote: &Path) -> Result<()> {
+        self.ensure_dir_exists(remote)?;
+
         let size = local.metadata()?.len();
         let out_chan = self.session.scp_send(remote, 0o644, size, None)?;
 
