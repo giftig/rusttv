@@ -30,6 +30,13 @@ use resolver::tmdb::TmdbResolver;
 
 type Result<T> = std::result::Result<T, Box<dyn error::Error>>;
 
+macro_rules! warn {
+    ($msg:expr) => {
+        let yellow = Style::new().yellow();
+        println!("{}", yellow.apply_to($msg));
+    };
+}
+
 fn get_remote_eps(
     client: &mut SshClient,
     local_eps: &Vec<Episode>,
@@ -107,12 +114,6 @@ fn osmc_refresh(cfg: &OsmcConfig) -> () {
 
 }
 
-// TODO: Make this a macro?
-fn warn(msg: &str) -> () {
-    let yellow = Style::new().yellow();
-    println!("{}", yellow.apply_to(msg));
-}
-
 #[proc_lock(name = "rusttv.lock")]
 fn perform_sync(conf: Config) -> Result<()> {
     let remote = &conf.remote;
@@ -157,7 +158,7 @@ fn perform_sync(conf: Config) -> Result<()> {
     sync_eps.sort();
 
     if sync_eps.len() == 0 {
-        warn("Nothing to sync!");
+        warn!("Nothing to sync!");
         return complete();
     }
 
@@ -167,7 +168,7 @@ fn perform_sync(conf: Config) -> Result<()> {
     }
 
     if conf.validation.prompt_confirmation && !prompt_confirm() {
-        warn("Aborting.");
+        warn!("Aborting.");
         return complete();
     }
 
