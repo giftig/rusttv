@@ -243,16 +243,27 @@ fn read_raw() -> String {
     );
 }
 
+macro_rules! sub_vars {
+    ($prop:expr) => {
+        $prop = sub_vars(&$prop).to_string();
+    }
+}
+
+macro_rules! sub_vars_opt {
+    ($prop:expr) => {
+        $prop = $prop.map(|v| sub_vars(&v).to_string());
+    }
+}
+
 pub(super) fn read() -> Config {
     let raw = read_raw();
     let mut conf: Config = toml::from_str(&raw).expect("Invalid config file!");
 
     // Substitute env vars in selected fields
-    // TODO: Can I use a macro to do this, and/or a feature of serde?
-    conf.local.tv_dir = sub_vars(&conf.local.tv_dir).to_string();
-    conf.remote.tv_dir = sub_vars(&conf.remote.tv_dir).to_string();
-    conf.remote.privkey = conf.remote.privkey.map(|v| sub_vars(&v).to_string());
-    conf.validation.tmdb.token = conf.validation.tmdb.token.map(|v| sub_vars(&v).to_string());
+    sub_vars!(conf.local.tv_dir);
+    sub_vars!(conf.remote.tv_dir);
+    sub_vars_opt!(conf.remote.privkey);
+    sub_vars_opt!(conf.validation.tmdb.token);
 
     if conf.remote.privkey.is_none() && conf.remote.password.is_none() {
         panic!("Neither privkey nor password specified in config, you must provide one!")
