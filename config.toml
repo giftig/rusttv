@@ -25,4 +25,3 @@ protocol = "http"
 prefix = "/"
 username = "osmc"
 password = "osmc"
-
