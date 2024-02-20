@@ -9,7 +9,7 @@ const SIM_THRESHOLD_PERFECT: f64 = 0.9;
 const SIM_THRESHOLD_GOOD: f64 = 0.7;
 
 pub struct StrsimResolver {
-    known_shows: Vec<String>
+    known_shows: Vec<String>,
 }
 
 impl StrsimResolver {

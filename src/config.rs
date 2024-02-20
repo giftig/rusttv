@@ -7,8 +7,8 @@ use std::path::PathBuf;
 
 use regex::{Captures, Regex};
 use serde::Deserialize;
-use toml;
 use serde_inline_default::serde_inline_default;
+use toml;
 
 use crate::local::FailureAction;
 
@@ -119,7 +119,9 @@ fn default_allowed_exts() -> Vec<String> {
 
 // Log defaults
 fn default_log() -> Logging {
-    Logging { local_path: default_local_log_path() }
+    Logging {
+        local_path: default_local_log_path(),
+    }
 }
 fn default_local_log_path() -> PathBuf {
     PathBuf::from(sub_vars("${HOME}/.rusttv/events/"))
@@ -127,7 +129,9 @@ fn default_local_log_path() -> PathBuf {
 
 // UI defaults
 fn default_ui() -> Ui {
-    Ui { block_closing: false }
+    Ui {
+        block_closing: false,
+    }
 }
 
 // TMDB defaults
@@ -136,7 +140,7 @@ fn default_tmdb() -> Tmdb {
         enabled: false,
         protocol: "https".to_string(),
         host: TMDB_HOST.to_string(),
-        token: None
+        token: None,
     }
 }
 
@@ -191,13 +195,13 @@ fn read_raw() -> String {
 macro_rules! sub_vars {
     ($prop:expr) => {
         $prop = sub_vars(&$prop).to_string();
-    }
+    };
 }
 
 macro_rules! sub_vars_opt {
     ($prop:expr) => {
         $prop = $prop.map(|v| sub_vars(&v).to_string());
-    }
+    };
 }
 
 pub(super) fn read() -> Config {

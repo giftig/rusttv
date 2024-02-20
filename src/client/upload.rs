@@ -42,10 +42,12 @@ pub(super) fn handle_upload(mut local_file: File, mut out_chan: Channel, size: u
 
     // TODO: Decouple user display with the low-level logic of transferring the data; probably a
     // better way to do this is to return the channel and pass it up to a higher level
-    let bar = ProgressBar::new(size)
-        .with_style(
-            ProgressStyle::with_template("{wide_bar:.green/blue} {eta} left ({bytes_per_sec}) {percent}% {msg:.green} ").unwrap()
-        );
+    let bar = ProgressBar::new(size).with_style(
+        ProgressStyle::with_template(
+            "{wide_bar:.green/blue} {eta} left ({bytes_per_sec}) {percent}% {msg:.green} ",
+        )
+        .unwrap(),
+    );
     for packet in rx {
         if let Ok(p) = packet.try_into() {
             bar.inc(p);

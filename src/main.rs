@@ -17,16 +17,16 @@ use console::Style;
 use dialoguer::Confirm;
 use proc_lock::proc_lock;
 
-use client::{Auth as SshAuth, SshClient};
 use client::osmc::OsmcClient;
+use client::{Auth as SshAuth, SshClient};
 use config::{Config, Osmc as OsmcConfig, Tmdb as TmdbConfig};
 use episode::Episode;
 use local::LocalReader;
 use log::{Event as LogEvent, Logger};
-use resolver::ShowResolver;
 use resolver::multi::MultiResolver;
 use resolver::strsim::StrsimResolver;
 use resolver::tmdb::TmdbResolver;
+use resolver::ShowResolver;
 
 type Result<T> = std::result::Result<T, Box<dyn error::Error>>;
 
@@ -62,10 +62,8 @@ fn get_resolver<T: AsRef<str>>(known_shows: &[T], tmdb: &TmdbConfig) -> Box<dyn 
     let token = tmdb.token.as_ref().expect("Missing TMDB token in config!");
     let tmdb_resolver = TmdbResolver::new(&tmdb.protocol, &tmdb.host, &token);
 
-    let resolvers: Vec<Box<dyn ShowResolver>> = vec![
-        Box::new(strsim_resolver),
-        Box::new(tmdb_resolver)
-    ];
+    let resolvers: Vec<Box<dyn ShowResolver>> =
+        vec![Box::new(strsim_resolver), Box::new(tmdb_resolver)];
     Box::new(MultiResolver::new(resolvers))
 }
 
@@ -100,18 +98,22 @@ fn osmc_refresh(cfg: &OsmcConfig) -> () {
         cfg.port,
         &cfg.prefix,
         &cfg.username,
-        &cfg.password
-    ).trigger_refresh() {
+        &cfg.password,
+    )
+    .trigger_refresh()
+    {
         Ok(_) => {
             eprintln!("[ {} ]", Style::new().green().apply_to("OK"))
         }
         Err(e) => {
             eprintln!("[ {} ]", Style::new().red().apply_to("FAILED"));
             eprintln!("");
-            eprintln!("Failure reason: {}. You might need to manually refresh via OSMC menus.", e)
+            eprintln!(
+                "Failure reason: {}. You might need to manually refresh via OSMC menus.",
+                e
+            )
         }
     };
-
 }
 
 #[proc_lock(name = "rusttv.lock")]

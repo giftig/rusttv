@@ -16,7 +16,7 @@ pub struct OsmcClient {
     port: Option<usize>,
     prefix: String,
     username: String,
-    password: String
+    password: String,
 }
 
 impl OsmcClient {
@@ -26,7 +26,7 @@ impl OsmcClient {
         port: Option<usize>,
         prefix: &str,
         username: &str,
-        password: &str
+        password: &str,
     ) -> OsmcClient {
         let pre = prefix.to_string();
 
@@ -34,35 +34,28 @@ impl OsmcClient {
             protocol: protocol.to_string(),
             host: host.to_string(),
             port: port,
-            prefix: if pre.ends_with("/") { pre } else { format!("{}/", pre) },
+            prefix: if pre.ends_with("/") {
+                pre
+            } else {
+                format!("{}/", pre)
+            },
             username: username.to_string(),
-            password: password.to_string()
+            password: password.to_string(),
         }
     }
 
     fn url_prefix(&self) -> String {
         match self.port {
-            Some(p) => {
-                format!(
-                    "{}://{}:{}@{}:{}{}",
-                    self.protocol,
-                    self.username,
-                    self.password,
-                    self.host,
-                    p,
-                    self.prefix
-                ).to_string()
-            }
-            _ => {
-                format!(
-                    "{}://{}:{}@{}{}",
-                    self.protocol,
-                    self.username,
-                    self.password,
-                    self.host,
-                    self.prefix
-                ).to_string()
-            }
+            Some(p) => format!(
+                "{}://{}:{}@{}:{}{}",
+                self.protocol, self.username, self.password, self.host, p, self.prefix
+            )
+            .to_string(),
+            _ => format!(
+                "{}://{}:{}@{}{}",
+                self.protocol, self.username, self.password, self.host, self.prefix
+            )
+            .to_string(),
         }
     }
 

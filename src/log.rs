@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-use std::fs::{File, create_dir_all};
+use std::fs::{create_dir_all, File};
 use std::io::{BufWriter, Result as IoResult, Write};
 use std::path::PathBuf;
 
@@ -20,7 +20,7 @@ impl Event<'_> {
         Event {
             timestamp: Utc::now(),
             username: whoami::username(),
-            episodes: episodes
+            episodes: episodes,
         }
     }
 }

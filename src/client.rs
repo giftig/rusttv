@@ -25,12 +25,12 @@ pub enum ClientError {
     #[error("A fatal error occurred while transforming OS-specific strings")]
     PlatformError,
     #[error("An unexpected threading error occurred")]
-    Thread
+    Thread,
 }
 
 pub enum Auth {
     Password(String),
-    Privkey(String)
+    Privkey(String),
 }
 
 type Result<T> = std::result::Result<T, ClientError>;
@@ -60,7 +60,11 @@ impl SshClient {
 
         match auth {
             Auth::Password(pwd) => client.session.userauth_password(username, &pwd)?,
-            Auth::Privkey(file) => client.session.userauth_pubkey_file(username, None, Path::new(file), None)?,
+            Auth::Privkey(file) => {
+                client
+                    .session
+                    .userauth_pubkey_file(username, None, Path::new(file), None)?
+            }
         }
 
         Ok(client)

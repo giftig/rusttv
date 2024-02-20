@@ -7,7 +7,7 @@ use super::ShowResolver;
 pub struct TmdbResolver {
     protocol: String,
     host: String,
-    token: String
+    token: String,
 }
 
 impl TmdbResolver {
@@ -15,7 +15,7 @@ impl TmdbResolver {
         TmdbResolver {
             protocol: protocol.to_string(),
             host: host.to_string(),
-            token: token.to_string()
+            token: token.to_string(),
         }
     }
 
@@ -34,11 +34,10 @@ impl TmdbResolver {
             .set("Authorization", &format!("Bearer {}", self.token))
             .query("query", &Self::strip_year(name));
 
-        let res = req
-            .call()
-            .ok()?;
+        let res = req.call().ok()?;
 
-        res.into_json::<JsValue>().ok()?
+        res.into_json::<JsValue>()
+            .ok()?
             .get("results")?
             .as_array()?
             .first()?
@@ -46,7 +45,6 @@ impl TmdbResolver {
             .as_str()
             .map(|s| s.to_string())
     }
-
 }
 
 impl ShowResolver for TmdbResolver {

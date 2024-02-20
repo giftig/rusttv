@@ -78,12 +78,24 @@ impl LocalReader {
         }
     }
 
-    fn read_one(&self, path: &Path, show_name: &str, show_certainty: f64) -> Result<Episode, ReadShowError> {
-        let filename = path.file_name()
+    fn read_one(
+        &self,
+        path: &Path,
+        show_name: &str,
+        show_certainty: f64,
+    ) -> Result<Episode, ReadShowError> {
+        let filename = path
+            .file_name()
             .and_then(|f| f.to_str())
             .ok_or(ReadShowError::BadPath(path.to_path_buf()))?;
 
-        match Episode::from(path, filename, show_name, show_certainty, &self.allowed_exts) {
+        match Episode::from(
+            path,
+            filename,
+            show_name,
+            show_certainty,
+            &self.allowed_exts,
+        ) {
             Ok(ep) => Ok(ep),
             Err(e) => {
                 print_err(&format!("{}: {}. ", path.display(), e));
@@ -104,7 +116,8 @@ impl LocalReader {
 
     fn read_show(&self, dir: &Path) -> Result<Vec<Episode>, ReadShowError> {
         let abs = canonicalize(dir).map_err(|_| ReadShowError::BadPath(dir.to_path_buf()))?;
-        let raw_show = abs.file_name()
+        let raw_show = abs
+            .file_name()
             .and_then(|f| f.to_str())
             .ok_or(ReadShowError::BadPath(abs.to_path_buf()))?;
 

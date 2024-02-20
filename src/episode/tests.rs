@@ -19,7 +19,14 @@ fn valid_episode_exact() {
         ext: String::from("mkv"),
     };
 
-    let actual = Episode::from(&path, "S01 E02.mkv", "All My Circuits", 1.0, &allowed_exts()).unwrap();
+    let actual = Episode::from(
+        &path,
+        "S01 E02.mkv",
+        "All My Circuits",
+        1.0,
+        &allowed_exts(),
+    )
+    .unwrap();
 
     assert_eq!(actual, expected);
 }

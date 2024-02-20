@@ -9,7 +9,6 @@ use console::Style;
 use regex::Regex;
 use serde::Serialize;
 
-
 #[derive(Clone, Debug, Serialize)]
 pub struct Episode {
     pub local_path: PathBuf,
@@ -70,14 +69,16 @@ impl fmt::Display for Episode {
             let full = self.local_path.to_string_lossy();
             let len = full.len();
 
-            if len <= 40 { full.to_string() } else { format!("…{}", &full[len - 39..]) }
+            if len <= 40 {
+                full.to_string()
+            } else {
+                format!("…{}", &full[len - 39..])
+            }
         };
 
         let pretty_remote = format!(
             "{}: S{:02} E{:02}",
-            self.show_name,
-            self.season_num,
-            self.episode_num
+            self.show_name, self.season_num, self.episode_num
         );
 
         let desc = format!(
@@ -94,10 +95,10 @@ impl fmt::Display for Episode {
 
 impl PartialEq for Episode {
     fn eq(&self, other: &Self) -> bool {
-        self.show_name == other.show_name &&
-            self.season_num == other.season_num &&
-            self.episode_num == other.episode_num &&
-            self.ext == other.ext
+        self.show_name == other.show_name
+            && self.season_num == other.season_num
+            && self.episode_num == other.episode_num
+            && self.ext == other.ext
     }
 }
 impl Eq for Episode {}
@@ -121,7 +122,6 @@ impl PartialOrd for Episode {
         Some(self.cmp(other))
     }
 }
-
 
 impl Episode {
     // Parse filename into season, episode, and extension; e.g. S01 E01.mkv -> (1, 1, mkv)
@@ -157,7 +157,10 @@ impl Episode {
         show_certainty: f64,
         allowed_exts: &[T],
     ) -> Result<Episode, ParseError> {
-        let exts: Vec<String> = allowed_exts.iter().map(|s| s.as_ref().to_string()).collect();
+        let exts: Vec<String> = allowed_exts
+            .iter()
+            .map(|s| s.as_ref().to_string())
+            .collect();
 
         let (season_num, episode_num, ext) =
             Self::parse_filename(filename).ok_or(ParseError::BadFilename)?;

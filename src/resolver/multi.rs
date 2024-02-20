@@ -6,7 +6,9 @@ pub struct MultiResolver {
 
 impl MultiResolver {
     pub fn new(resolvers: Vec<Box<dyn ShowResolver>>) -> MultiResolver {
-        MultiResolver { resolvers: resolvers }
+        MultiResolver {
+            resolvers: resolvers,
+        }
     }
 }
 
