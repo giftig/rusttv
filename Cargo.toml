@@ -20,4 +20,4 @@ strsim = "0.10.0"
 thiserror = "1.0.56"
 toml = "0.8.8"
 ureq = { version = "2.9.1", features = ["json"] }
-whoami = "1.4.1"
+whoami = "1.5.0"
