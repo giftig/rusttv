@@ -28,6 +28,12 @@ impl TmdbResolver {
         res
     }
 
+    // It's possible for the name to contain special characters which will break
+    // path formatting; make sure problem characters are replaced with a space
+    fn sanitise_name(name: &str) -> String {
+        name.replace("/", " ").replace("\\", " ")
+    }
+
     fn get_first_match(&self, name: &str) -> Option<String> {
         let url = format!("{}://{}/3/search/tv", self.protocol, self.host);
         let req = ureq::get(&url)
@@ -43,7 +49,7 @@ impl TmdbResolver {
             .first()?
             .get("name")?
             .as_str()
-            .map(|s| s.to_string())
+            .map(Self::sanitise_name)
     }
 }
 
