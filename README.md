@@ -45,3 +45,25 @@ a transfer may result in a malformed destination file which can't be fixed witho
 intervention. A tool like `rsync` would do this job better, but I didn't want to depend
 on another binary tool while making a portable, cross-compilable tool (and solving the
 problem myself was a better introduction to Rust).
+
+## Working with the project
+
+The default make target will build and create a release artifact across all platforms:
+
+```shell
+make
+```
+
+This includes creating a binary distribution as a `.tar.gz` or `.zip` for each platform.
+See `scripts/dist.sh` for the details.
+
+You can run unit tests with `make test`.
+
+To test the application you can simply create the appropriate directory trees on local and remote
+SSH hosts and check that it gets correctly synced.
+
+### Configuration
+
+Config is read as TOML from `~/.rusttv/config.toml`, `/usr/share/rusttv/config.toml`, or `config.toml`
+in your current working directory, in that order of preference. A default `config.toml` is included
+in the project; you can copy and adjust this as required.
