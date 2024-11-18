@@ -8,7 +8,7 @@ tv_dir = "${HOME}/.rusttv/sandbox/"
 
 [validation]
 allowed_exts = ["avi", "m4v", "ass", "3gp", "mkv", "mp4", "srt"]
-on_failure = "skip"
+on_failure = "skip"  # or "abort"
 prompt_confirmation = true
 
 [validation.tmdb]

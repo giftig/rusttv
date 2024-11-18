@@ -177,6 +177,8 @@ fn perform_sync(conf: Config) -> Result<()> {
     let logger = Logger::new(conf.log.local_path.clone());
     let _ = logger.log_event(&LogEvent::new(&sync_eps));
 
+    client.wipe_temp()?;
+
     for e in &sync_eps {
         println!("\n");
         println!("{}", e.remote_subpath().display());

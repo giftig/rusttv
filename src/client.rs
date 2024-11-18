@@ -35,8 +35,22 @@ pub enum Auth {
 
 type Result<T> = std::result::Result<T, ClientError>;
 
+const TEMP_PREFIX: &str = ".rusttv.tmp";
+
+/// Create a temporary path to upload a file to before moving it into the final path
+/// This makes rewriting partial, broken files less likely in event of a connection error
+fn temp_path(p: &Path) -> Result<PathBuf> {
+    let mut tmp = p.to_path_buf();
+    let filename: &str = {
+        tmp.file_name().and_then(|f| f.to_str()).ok_or(ClientError::PlatformError)?
+    };
+    tmp.set_file_name(&format!("{}.{}", TEMP_PREFIX, filename));
+
+    Ok(tmp)
+}
+
 impl SshClient {
-    // Simple sanitisation to make sure the path works ok in a single-quoted shell string
+    // Simple sanitisation to make sure the path works ok in a double-quoted shell string
     // This undoubtedly misses some edge cases but will work ok given injection isn't a problem
     fn sanitise_shell_path(p: &Path) -> Result<String> {
         let s = p.to_str().ok_or(ClientError::PlatformError)?;
@@ -70,6 +84,7 @@ impl SshClient {
         Ok(client)
     }
 
+    /// Execute an SSH command
     fn execute(&mut self, cmd: &str) -> Result<String> {
         let mut channel = self.session.channel_session()?;
         channel.exec(cmd)?;
@@ -84,6 +99,30 @@ impl SshClient {
         let dir = path.parent().ok_or(ClientError::EnsureDirError)?;
         let dir_sane = Self::sanitise_shell_path(dir)?;
         self.execute(&format!("mkdir -p \"{}\"", dir_sane))?;
+        Ok(())
+    }
+
+    fn mv(&mut self, src: &Path, dest: &Path) -> Result<()> {
+        self.execute(
+            &format!(
+                "mv \"{}\" \"{}\"",
+                Self::sanitise_shell_path(src)?,
+                Self::sanitise_shell_path(dest)?
+            )
+        )?;
+
+        Ok(())
+    }
+
+    /// Clear all temporary files left behind by interrupted runs
+    pub fn wipe_temp(&mut self) -> Result<()> {
+        self.execute(
+            &format!(
+                "find \"{}\" -type f -name \"{}.*\" -delete",
+                Self::sanitise_shell_path(&self.tv_dir)?,
+                TEMP_PREFIX
+            )
+        )?;
         Ok(())
     }
 
@@ -102,14 +141,19 @@ impl SshClient {
         Ok(output.split_terminator("\n").map(String::from).collect())
     }
 
+    /// Upload a file over SSH
     pub fn upload_file(&mut self, local: &Path, remote: &Path) -> Result<()> {
         self.ensure_dir_exists(remote)?;
+        let tmp = temp_path(remote)?;
 
         let size = local.metadata()?.len();
-        let out_chan = self.session.scp_send(remote, 0o644, size, None)?;
+        let out_chan = self.session.scp_send(&tmp, 0o644, size, None)?;
 
         let local_file = File::open(local)?;
 
-        upload::handle_upload(local_file, out_chan, size)
+        upload::handle_upload(local_file, out_chan, size)?;
+        self.mv(&tmp, remote)?;
+
+        Ok(())
     }
 }

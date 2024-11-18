@@ -67,3 +67,7 @@ SSH hosts and check that it gets correctly synced.
 Config is read as TOML from `~/.rusttv/config.toml`, `/usr/share/rusttv/config.toml`, or `config.toml`
 in your current working directory, in that order of preference. A default `config.toml` is included
 in the project; you can copy and adjust this as required.
+
+Simple env var substitutions are supported in relevant config properties, in the format
+`${HOME}/foo/bar` where the braces are mandatory. This substitutions mechanism is only provided for
+file paths and secrets.
