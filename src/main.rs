@@ -201,6 +201,8 @@ fn main() {
     perform_sync(conf)
         .map_err(|e| {
             println!("{}", e);
+            // FIXME: respect conf.ui.block_closing here too, it's important to see the error
+            // and that setting is to prevent the console vanishing if the process ends
             std::process::exit(1);
         })
         .unwrap();
