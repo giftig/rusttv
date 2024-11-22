@@ -6,6 +6,7 @@ use std::io::{Error as IoError, Read};
 use std::net::TcpStream;
 use std::path::{Path, PathBuf};
 
+use ::log::debug;
 use ssh2::{Error as SshError, Session};
 use thiserror::Error;
 
@@ -86,12 +87,15 @@ impl SshClient {
 
     /// Execute an SSH command
     fn execute(&mut self, cmd: &str) -> Result<String> {
+        debug!("ssh exec: {}", cmd);
         let mut channel = self.session.channel_session()?;
         channel.exec(cmd)?;
 
         let mut output = String::new();
         channel.read_to_string(&mut output)?;
         channel.wait_close()?;
+
+        debug!("ssh exec result: {}", &output);
         Ok(output)
     }
 
@@ -143,6 +147,7 @@ impl SshClient {
 
     /// Upload a file over SSH
     pub fn upload_file(&mut self, local: &Path, remote: &Path) -> Result<()> {
+        debug!("Uploading file: {:?} -> {:?}", &local, &remote);
         self.ensure_dir_exists(remote)?;
         let tmp = temp_path(remote)?;
 
@@ -153,6 +158,7 @@ impl SshClient {
 
         upload::handle_upload(local_file, out_chan, size)?;
         self.mv(&tmp, remote)?;
+        debug!("Completed upload");
 
         Ok(())
     }

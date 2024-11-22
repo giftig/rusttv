@@ -15,18 +15,20 @@ use std::path::PathBuf;
 
 use console::Style;
 use dialoguer::Confirm;
+use flexi_logger::{Cleanup, Criterion, Duplicate, FileSpec, Logger, Naming, detailed_format};
+use ::log::{info, error};
 use proc_lock::proc_lock;
 
-use client::osmc::OsmcClient;
-use client::{Auth as SshAuth, SshClient};
-use config::{Config, Osmc as OsmcConfig, Tmdb as TmdbConfig};
-use episode::Episode;
-use local::LocalReader;
-use log::{Event as LogEvent, Logger};
-use resolver::multi::MultiResolver;
-use resolver::strsim::StrsimResolver;
-use resolver::tmdb::TmdbResolver;
-use resolver::ShowResolver;
+use crate::client::osmc::OsmcClient;
+use crate::client::{Auth as SshAuth, SshClient};
+use crate::config::{Config, Osmc as OsmcConfig, Tmdb as TmdbConfig};
+use crate::episode::Episode;
+use crate::local::LocalReader;
+use crate::log::{Event as LogEvent, Logger as ProcessLogger};
+use crate::resolver::multi::MultiResolver;
+use crate::resolver::strsim::StrsimResolver;
+use crate::resolver::tmdb::TmdbResolver;
+use crate::resolver::ShowResolver;
 
 type Result<T> = std::result::Result<T, Box<dyn error::Error>>;
 
@@ -111,7 +113,8 @@ fn osmc_refresh(cfg: &OsmcConfig) -> () {
             eprintln!(
                 "Failure reason: {}. You might need to manually refresh via OSMC menus.",
                 e
-            )
+            );
+            error!("OSMC refresh failed: {}", e);
         }
     };
 }
@@ -174,11 +177,12 @@ fn perform_sync(conf: Config) -> Result<()> {
         return complete();
     }
 
-    let logger = Logger::new(conf.log.local_path.clone());
+    let logger = ProcessLogger::new(conf.log.local_path.clone());
     let _ = logger.log_event(&LogEvent::new(&sync_eps));
 
     client.wipe_temp()?;
 
+    info!("Syncing episodes: [{:?}]", &sync_eps);
     for e in &sync_eps {
         println!("\n");
         println!("{}", e.remote_subpath().display());
@@ -198,11 +202,23 @@ fn perform_sync(conf: Config) -> Result<()> {
 fn main() {
     let conf = config::read();
 
+    Logger::try_with_str("debug")
+        .unwrap()
+        .log_to_file(FileSpec::try_from("logs/rusttv.log").unwrap())
+        .append()
+        .rotate(
+            Criterion::Size(100 * 1024),
+            Naming::Timestamps,
+            Cleanup::KeepLogFiles(20)
+        )
+        .duplicate_to_stderr(Duplicate::Warn)
+        .format(detailed_format)
+        .start()
+        .unwrap();
+
     perform_sync(conf)
         .map_err(|e| {
-            println!("{}", e);
-            // FIXME: respect conf.ui.block_closing here too, it's important to see the error
-            // and that setting is to prevent the console vanishing if the process ends
+            error!("{}", e);
             std::process::exit(1);
         })
         .unwrap();
