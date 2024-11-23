@@ -18,6 +18,7 @@ use dialoguer::Confirm;
 use flexi_logger::{Cleanup, Criterion, Duplicate, FileSpec, Logger, Naming, detailed_format};
 use ::log::{info, error};
 use proc_lock::proc_lock;
+use typed_path::Utf8UnixPathBuf;
 
 use crate::client::osmc::OsmcClient;
 use crate::client::{Auth as SshAuth, SshClient};
@@ -142,7 +143,7 @@ fn perform_sync(conf: Config) -> Result<()> {
         remote.port,
         &remote.username,
         &auth,
-        &PathBuf::from(&remote.tv_dir),
+        &Utf8UnixPathBuf::from(&remote.tv_dir),
     )?;
     let known_shows = client.list_shows()?;
 
@@ -185,9 +186,9 @@ fn perform_sync(conf: Config) -> Result<()> {
     info!("Syncing episodes: [{:?}]", &sync_eps);
     for e in &sync_eps {
         println!("\n");
-        println!("{}", e.remote_subpath().display());
+        println!("{}", e.remote_subpath());
 
-        let mut remote_path = PathBuf::from(&conf.remote.tv_dir);
+        let mut remote_path = Utf8UnixPathBuf::from(&conf.remote.tv_dir);
         remote_path.push(&e.remote_subpath());
         client.upload_file(&e.local_path, &remote_path)?;
     }

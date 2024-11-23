@@ -4,15 +4,16 @@ pub mod upload;
 use std::fs::File;
 use std::io::{Error as IoError, Read};
 use std::net::TcpStream;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use ::log::debug;
 use ssh2::{Error as SshError, Session};
 use thiserror::Error;
+use typed_path::{Utf8UnixPath, Utf8UnixPathBuf};
 
 pub struct SshClient {
     session: Session,
-    tv_dir: PathBuf,
+    tv_dir: Utf8UnixPathBuf,
 }
 
 #[derive(Error, Debug)]
@@ -40,21 +41,19 @@ const TEMP_PREFIX: &str = ".rusttv.tmp";
 
 /// Create a temporary path to upload a file to before moving it into the final path
 /// This makes rewriting partial, broken files less likely in event of a connection error
-fn temp_path(p: &Path) -> Result<PathBuf> {
+fn temp_path(p: &Utf8UnixPath) -> Result<Utf8UnixPathBuf> {
     let mut tmp = p.to_path_buf();
-    let filename: &str = {
-        tmp.file_name().and_then(|f| f.to_str()).ok_or(ClientError::PlatformError)?
-    };
+    let filename: &str = tmp.file_name().ok_or(ClientError::PlatformError)?;
     tmp.set_file_name(&format!("{}.{}", TEMP_PREFIX, filename));
 
     Ok(tmp)
 }
 
 impl SshClient {
-    // Simple sanitisation to make sure the path works ok in a double-quoted shell string
-    // This undoubtedly misses some edge cases but will work ok given injection isn't a problem
-    fn sanitise_shell_path(p: &Path) -> Result<String> {
-        let s = p.to_str().ok_or(ClientError::PlatformError)?;
+    /// Simple sanitisation to make sure the path works ok in a double-quoted shell string
+    /// This undoubtedly misses some edge cases but will work ok given injection isn't a problem
+    fn sanitise_shell_path(p: &Utf8UnixPath) -> Result<String> {
+        let s = p.as_str().to_string();
         Ok(s.replace("\"", "\\\""))
     }
 
@@ -63,7 +62,7 @@ impl SshClient {
         port: usize,
         username: &str,
         auth: &Auth,
-        tv_dir: &Path,
+        tv_dir: &Utf8UnixPath,
     ) -> Result<SshClient> {
         let mut client = SshClient {
             session: Session::new()?,
@@ -99,14 +98,14 @@ impl SshClient {
         Ok(output)
     }
 
-    fn ensure_dir_exists(&mut self, path: &Path) -> Result<()> {
+    fn ensure_dir_exists(&mut self, path: &Utf8UnixPath) -> Result<()> {
         let dir = path.parent().ok_or(ClientError::EnsureDirError)?;
         let dir_sane = Self::sanitise_shell_path(dir)?;
         self.execute(&format!("mkdir -p \"{}\"", dir_sane))?;
         Ok(())
     }
 
-    fn mv(&mut self, src: &Path, dest: &Path) -> Result<()> {
+    fn mv(&mut self, src: &Utf8UnixPath, dest: &Utf8UnixPath) -> Result<()> {
         self.execute(
             &format!(
                 "mv \"{}\" \"{}\"",
@@ -146,13 +145,13 @@ impl SshClient {
     }
 
     /// Upload a file over SSH
-    pub fn upload_file(&mut self, local: &Path, remote: &Path) -> Result<()> {
-        debug!("Uploading file: {:?} -> {:?}", &local, &remote);
+    pub fn upload_file(&mut self, local: &Path, remote: &Utf8UnixPath) -> Result<()> {
+        debug!("Uploading file: {:?} -> {:?}", local, remote);
         self.ensure_dir_exists(remote)?;
         let tmp = temp_path(remote)?;
 
         let size = local.metadata()?.len();
-        let out_chan = self.session.scp_send(&tmp, 0o644, size, None)?;
+        let out_chan = self.session.scp_send(&Path::new(&tmp.as_str()), 0o644, size, None)?;
 
         let local_file = File::open(local)?;
 

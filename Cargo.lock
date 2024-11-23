@@ -681,6 +681,7 @@ dependencies = [
  "strsim",
  "thiserror",
  "toml",
+ "typed-path",
  "ureq",
  "whoami",
 ]
@@ -897,6 +898,12 @@ dependencies = [
  "toml_datetime",
  "winnow",
 ]
+
+[[package]]
+name = "typed-path"
+version = "0.9.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "82205ffd44a9697e34fc145491aa47310f9871540bb7909eaa9365e0a9a46607"
 
 [[package]]
 name = "unicode-bidi"

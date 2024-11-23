@@ -8,6 +8,7 @@ use std::path::{Path, PathBuf};
 use console::Style;
 use regex::Regex;
 use serde::Serialize;
+use typed_path::Utf8UnixPathBuf;
 
 #[derive(Clone, Debug, Serialize)]
 pub struct Episode {
@@ -185,8 +186,8 @@ impl Episode {
             self.season_num, self.episode_num, self.ext
         )
     }
-    pub fn remote_subpath(&self) -> PathBuf {
-        let mut p = PathBuf::from(&self.show_name);
+    pub fn remote_subpath(&self) -> Utf8UnixPathBuf {
+        let mut p = Utf8UnixPathBuf::from(&self.show_name);
         p.push(self.remote_filename());
         p
     }
