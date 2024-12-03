@@ -1,3 +1,4 @@
+use ::log::debug;
 use regex::Regex;
 use serde_json::Value as JsValue;
 use ureq;
@@ -40,16 +41,22 @@ impl TmdbResolver {
             .set("Authorization", &format!("Bearer {}", self.token))
             .query("query", &Self::strip_year(name));
 
+        debug!("TMDB call: {:?}", &req);
         let res = req.call().ok()?;
+        debug!("TMDB response: {:?}", &res);
 
-        res.into_json::<JsValue>()
+        let m = res.into_json::<JsValue>()
             .ok()?
             .get("results")?
             .as_array()?
             .first()?
             .get("name")?
             .as_str()
-            .map(Self::sanitise_name)
+            .map(Self::sanitise_name);
+
+        debug!("Matched from TMDB: {:?} === {:?}", name, &m);
+
+        m
     }
 }
 

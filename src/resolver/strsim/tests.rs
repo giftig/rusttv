@@ -6,6 +6,10 @@ fn get_resolver() -> StrsimResolver {
         "Everybody Loves Hypnotoad",
         "Calculon (2010)",
         "Calculon: A Calculon Story",
+        "The Never Ending Story",
+        "The Chase",
+        "The Bar",
+        "The Run",
     ];
     StrsimResolver::new(&known_shows)
 }
@@ -22,8 +26,8 @@ fn resolve_exact() {
     ] {
         let (actual, certainty) = resolver.resolve(show).unwrap();
 
-        assert_eq!(actual, show);
-        assert_eq!(certainty, 1.0);
+        assert_eq!(actual, show, "Input: {}", show);
+        assert_eq!(certainty, 1.0, "Exact match. Input: {}", show);
     }
 }
 
@@ -34,14 +38,25 @@ fn resolve_fuzzy() {
     for (fuzzy, expected) in vec![
         ("all my circuits", "All My Circuits"),
         ("All My Circuits (2011)", "All My Circuits"),
-        ("calculon", "Calculon (2010)"),
         ("Calculon a Calculon Story", "Calculon: A Calculon Story"),
         (
             "calculon a calculon story (2011)",
             "Calculon: A Calculon Story",
         ),
+        ("Never ending story", "The Never Ending Story"),
+        ("The Chsae", "The Chase"),
     ] {
-        let (actual, _) = resolver.resolve(fuzzy).unwrap();
-        assert_eq!(actual, expected);
+        let (actual, _) = resolver.resolve(fuzzy).expect(&format!("Match expected for {}", fuzzy));
+        assert_eq!(actual, expected, "Input: {}", fuzzy);
+    }
+}
+
+#[test]
+fn no_resolve() {
+    let resolver = get_resolver();
+
+    for show in vec!["The March", "The Foo", "The Fuzz"] {
+        let res = resolver.resolve(show);
+        assert_eq!(res, None, "Input: {}", show);
     }
 }

@@ -6,7 +6,10 @@ use strsim;
 use super::ShowResolver;
 
 const SIM_THRESHOLD_PERFECT: f64 = 0.9;
-const SIM_THRESHOLD_GOOD: f64 = 0.7;
+const SIM_THRESHOLD_GOOD: f64 = 0.75;
+
+const SHORT_LENGTH: usize = 10;
+const SIM_THRESHOLD_GOOD_SHORT: f64 = 0.85;  // with very short inputs
 
 pub struct StrsimResolver {
     known_shows: Vec<String>,
@@ -41,8 +44,14 @@ impl ShowResolver for StrsimResolver {
             }
         }
 
-        if best_thresh >= SIM_THRESHOLD_GOOD {
-            return best_match.map(|s| (s, best_thresh));
+        if let Some(m) = best_match {
+            if best_thresh >= SIM_THRESHOLD_GOOD_SHORT {
+                return Some((m, best_thresh));
+            }
+
+            if m.len() > SHORT_LENGTH && best_thresh >= SIM_THRESHOLD_GOOD {
+                return Some((m, best_thresh));
+            }
         }
 
         None
